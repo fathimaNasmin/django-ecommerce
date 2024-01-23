@@ -5,6 +5,16 @@ from django.db import models
 from django.contrib.auth.models import (AbstractBaseUser, 
                                         BaseUserManager, 
                                         PermissionsMixin)
+from django.core.exceptions import ValidationError
+
+
+# Custom Model Validation 
+def validate_zipcode(zipcode):
+    """Custom function for validating the zipcode of the user address."""
+    if zipcode > 0 and len(str(abs(zipcode))) == 5:
+        return zipcode
+    else:
+        raise ValidationError("Enter an valid zipcode")    
 
 
 class UserManager(BaseUserManager):
@@ -46,4 +56,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+    
+
+class ShippingAddress(models.Model):
+    """Shipping Address of the user."""
+    street = models.CharField(max_length=255)
+    building = models.IntegerField()
+    city = models.CharField(max_length=255)
+    state = models.CharField(max_length=255)
+    zipcode = models.IntegerField(validators=[validate_zipcode])
+    customer = models.ForeignKey(User, on_delete=models.CASCADE)
     

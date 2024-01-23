@@ -2,6 +2,9 @@
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from user import models
+
+from django.core.exceptions import ValidationError
 
 
 class ModelTests(TestCase):
@@ -46,3 +49,41 @@ class ModelTests(TestCase):
         
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+        
+    class ShippingAddressModelTests(TestCase):
+        """Tests the shipping address model."""
+        def setUp(self):
+            self.user = get_user_model().objects.create(
+                email='test@example.com',
+                password='testpass'
+            )
+            self.address = models.ShippingAddress.objects.create(
+                street='3000 swallow hill rd',
+                building='111',
+                city='new jersey city',
+                state='NJ',
+                zipcode='12344',
+                customer=self.user
+            )
+            
+        def test_create_user_address(self):
+            """Test creating user address."""
+            self.assertEqual(self.address.street, '3000 swallow hill rd')
+            self.assertEqual(self.address.customer, self.user)
+            self.assertEqual(len(self.address.zipcode), 5)
+            
+        def test_address_zipcode_raises_error(self):
+            """Test the address zipcode validation error."""
+            self.assertRaises(ValidationError, self.address.full_clean)
+            
+        def test_empty_address_error(self):
+            """Test empty address raises error."""
+            empty_address = models.ShippingAddress.objects.create(
+                street='',
+                building='',
+                city='',
+                state='',
+                zipcode='',
+                customer=self.user
+            )
+            self.assertRaises(ValidationError, empty_address.full_clean)
