@@ -67,3 +67,6 @@ class ShippingAddress(models.Model):
     zipcode = models.IntegerField(validators=[validate_zipcode])
     customer = models.ForeignKey(User, on_delete=models.CASCADE)
     
+    def __str__(self):
+        return f"{self.customer.full_name} - {self.city},{self.state}"
+    

@@ -7,6 +7,16 @@ from django.utils.translation import gettext_lazy as _
 from user import models
 
 
+class ShippingAddressInline(admin.TabularInline):
+    """
+    Tabular Inline in useradmin for showing the 
+    addresses of the particular user.
+    """
+    model = models.ShippingAddress
+    extra = 0
+    readonly_fields = ('street', 'building', 'city', 'state', 'zipcode')
+
+
 class UserAdmin(BaseUserAdmin):
     """Define admin page for user."""
     ordering = ['-id']
@@ -34,7 +44,23 @@ class UserAdmin(BaseUserAdmin):
             )
         }),
     )
+    list_filter = ('created_at',)
+    inlines = [ShippingAddressInline]
+
+
+class ShippingAddressAdmin(admin.ModelAdmin):
+    """Define shipping address in User."""
+    list_display = ('street', 'city', 'state', 'zipcode', 'customer_email')
+    list_filter = ('state',)
+    search_fields = ('state', 'city', 'zipcode',)
+
+    def customer_email(self, obj):
+        return obj.customer.email
+
+    customer_email.short_description = 'Customer Email'
+    
 
 
 admin.site.register(models.User, UserAdmin)
+admin.site.register(models.ShippingAddress, ShippingAddressAdmin)
 
