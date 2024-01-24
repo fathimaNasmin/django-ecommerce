@@ -60,7 +60,6 @@ class ShippingAddressAdmin(admin.ModelAdmin):
     customer_email.short_description = 'Customer Email'
     
 
-
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.ShippingAddress, ShippingAddressAdmin)
 

@@ -70,3 +70,6 @@ class ShippingAddress(models.Model):
     def __str__(self):
         return f"{self.customer.full_name} - {self.city},{self.state}"
     
+    class Meta:
+        verbose_name_plural = 'Shipping Address'
+    
