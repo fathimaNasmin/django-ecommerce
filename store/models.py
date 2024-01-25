@@ -37,3 +37,14 @@ class SubCategory(models.Model):
     def save(self, *args, **kwargs):
         self.name = self.name.lower()
         super().save(*args, **kwargs)
+        
+
+class Product(models.Model):
+    """Product model."""
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    price = models.DecimalField(max_digits=5, decimal_places=2)
+    image = models.ImageField(upload_to='products/images/')
+    created_at = models.DateField(auto_now_add=True)
+    sub_category = models.ForeignKey(SubCategory, on_delete=models.CASCADE)
+    # discount_id
