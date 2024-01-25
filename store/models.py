@@ -2,6 +2,10 @@
 """
 from django.db import models
 
+from django.core import validators
+
+
+# Custom model Validation
 
 class Category(models.Model):
     """Category model for products."""
@@ -41,10 +45,29 @@ class SubCategory(models.Model):
 
 class Product(models.Model):
     """Product model."""
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, 
+                            validators=[
+                                validators.MinLengthValidator(
+                                    limit_value=8,
+                                    message='Product name should have minimum of 8 characters.')
+                                ]
+                            )
     description = models.TextField()
-    price = models.DecimalField(max_digits=5, decimal_places=2)
-    image = models.ImageField(upload_to='products/images/')
+    price = models.DecimalField(max_digits=5, 
+                                decimal_places=2,
+                                validators=[validators.MinValueValidator(
+                                    limit_value=0.99, 
+                                    message='Price should be greater than 0.'),
+                                            validators.MaxValueValidator(
+                                                limit_value=999.99,
+                                                message='Price should be less than $999.99'
+                                            )
+                                    ]
+                                )
+    image = models.ImageField(upload_to='products/images/',
+                              validators=[
+                                  validators.validate_image_file_extension
+                                  ])
     created_at = models.DateField(auto_now_add=True)
     sub_category = models.ForeignKey(SubCategory, on_delete=models.CASCADE)
     # discount_id
