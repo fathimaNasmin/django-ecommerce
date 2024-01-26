@@ -43,6 +43,32 @@ class SubCategory(models.Model):
         super().save(*args, **kwargs)
         
 
+class Inventory(models.Model):
+    """Inventory of the product."""
+    quantity = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+    
+    
+class Discount(models.Model):
+    """Discount of the product."""
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+    percent = models.DecimalField(max_digits=4, decimal_places=2,
+                                  validators=[
+                                    validators.MinValueValidator(
+                                        limit_value=0.1, 
+                                        message='Discount should be minimum of 0.1%'
+                                        ), 
+                                    validators.MaxValueValidator(
+                                        limit_value=99.99,
+                                        message='Discount should not exceed 99.99%'
+                                        )
+                                    ])
+    
+    active = models.BooleanField(default=False, verbose_name='Is on sale')
+    
+    
 class Product(models.Model):
     """Product model."""
     name = models.CharField(max_length=255, 
@@ -70,4 +96,11 @@ class Product(models.Model):
                                   ])
     created_at = models.DateField(auto_now_add=True)
     sub_category = models.ForeignKey(SubCategory, on_delete=models.CASCADE)
-    # discount_id
+    discount = models.ForeignKey(Discount, null=True, blank=True, on_delete=models.CASCADE)
+    inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE)
+    
+
+
+    
+    
+    
