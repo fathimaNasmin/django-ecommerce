@@ -193,22 +193,14 @@ class ProductImageUploadTests(TestCase):
 class InventoryModelTests(TestCase):
     """Tests the Inventory Model."""
     def setUp(self):
-        self.category = models.Category.objects.create(
-            name='cat1'
-        )
-        self.sub_category = models.SubCategory.objects.create(
-            name='sub_cat1',
-            category=self.category
-        )
-        self.product_instance = {
-            'name': 'Test Product', 
-            'description': 'This is a test product.', 
-            'price': Decimal('19.99'), 
-            'image': SimpleUploadedFile(name='test_image.jpg', content=b'', content_type='image/jpeg')
-        }
+        self.category = create_a_category('home decor')
+        self.sub_category = create_a_sub_category('wall decor', self.category)
         self.product = models.Product.objects.create(
-            **self.product_instance,
-            sub_category=self.sub_category)
+            name='xyz',
+            description='xyz description',
+            price=Decimal('10.98'),
+            sub_category=self.sub_category
+            )
         
     def tearDown(self):
         """Delete any created instances after each test method."""
