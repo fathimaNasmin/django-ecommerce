@@ -65,6 +65,7 @@ class Product(models.Model):
                                     ]
                                 )
     image = models.ImageField(upload_to='products/images/',
+                              null=True,
                               validators=[
                                   validators.validate_image_file_extension
                                   ])

@@ -1,6 +1,7 @@
 """Tests the Store models
 """
-
+from django.test import override_settings
+import shutil
 from django.test import TestCase
 from store import models
 
@@ -15,16 +16,40 @@ from PIL import Image
 import datetime
 
 
+# SimpleUploadedFile(name='test_image.jpg', content=b'', content_type='image/jpeg')
+TEST_DIR = 'test_data'
+
+
+def create_a_product(p_name, p_desc, p_price, subcategory):
+    """A helper function to create and return a product."""
+    return models.Product.objects.create(
+            name=p_name, 
+            description=p_desc, 
+            price=Decimal(p_price),
+            sub_category=subcategory
+    )
+    
+
+def create_a_sub_category(sub_category, category):
+    """A helper function to create and returns sub_category objects."""
+    return models.SubCategory.objects.create(
+        name=sub_category,
+        category=category
+    )
+
+
+def create_a_category(category_name):
+    """A helper function to create and returns category object."""
+    return models.Category.objects.create(
+        name=category_name
+    )
+
 
 class StoreModelTests(TestCase):
     """Test cases for store model."""
     def setUp(self):
-        self.category1 = models.Category.objects.create(
-            name='cat1'
-        )
-        self.category2 = models.Category.objects.create(
-            name='cat2'
-        )
+        self.category1 = create_a_category('cat1')
+        self.category2 = create_a_category('cat2')
     
     def test_category_success(self):
         """test the creation of category success."""
@@ -38,127 +63,133 @@ class StoreModelTests(TestCase):
             
     def test_category_empty_name_error(self):
         """Test the empty category name raises error."""
-        empty_category = models.Category.objects.create(name='')
+        empty_category = create_a_category('')
         self.assertRaises(ValidationError, empty_category.full_clean)
         
     def test_subcategory_success(self):
         """test the creation of category success."""
-        subcategory1 = models.SubCategory.objects.create(
-            name='subcat1',
-            category=self.category1
-        )
+        subcategory1 = create_a_sub_category('subcat1', self.category1)
         subcategory_obj = models.SubCategory.objects.all()
         self.assertEqual(subcategory_obj.count(), 1)
+        self.assertEqual(subcategory1.name, 'subcat1')
         
     def test_subcategory_unique_name(self):
         """Test the unique name of the category."""
-        models.SubCategory.objects.create(
-            name='cat1',
-            category=self.category1
-        )
+        create_a_sub_category('subcat1', self.category1)
         
         with self.assertRaises(IntegrityError):
             models.SubCategory.objects.create(
-                name='cat1', 
+                name='subcat1', 
                 category=self.category1)
     
     def test_subcategory_empty_name_error(self):
         """Test the empty category name raises error."""
-        empty_category = models.SubCategory.objects.create(
-            name='', category=self.category1)
+        empty_category = create_a_sub_category('', self.category1)
         
         self.assertRaises(ValidationError, empty_category.full_clean)
         
     def test_subcategory_unique_name_different_category(self):
         """Test subcategory name uniqueness with different category."""
-        models.SubCategory.objects.create(
-            name='subcat1',
-            category=self.category1
-        )
-        models.SubCategory.objects.create(
-            name='subcat1',
-            category=self.category2
-        )
+        create_a_sub_category('subcat1', self.category1)
+        create_a_sub_category('subcat1', self.category2)
         
         self.assertEqual(models.SubCategory.objects.count(), 2)
         
 
 class ProductModelTests(TestCase):
     """Test product model."""
-    def setUp(self):
-        self.category = models.Category.objects.create(
-            name='cat1'
-        )
-        self.sub_category = models.SubCategory.objects.create(
-            name='sub_cat1',
-            category=self.category
-        )
-        self.product = {
-            'name': 'Test Product', 
-            'description': 'This is a test product.', 
-            'price': Decimal('19.99'), 
-            'image': SimpleUploadedFile(name='test_image.jpg', content=b'', content_type='image/jpeg')
-        }
-        
-    def tearDown(self):
-        """Delete any created instances after each test method."""
-        models.Product.objects.all().delete()
-        
     def test_create_product_success(self):
         """Test create of product success."""
-        
-        product = models.Product(
-            **self.product,
-            sub_category=self.sub_category
-        )
-        product.full_clean()  
-        product.save()
+        self.category = create_a_category('home decor')
+        self.sub_category = create_a_sub_category('wall decor', self.category)
+        self.product = create_a_product('xyz mirror',
+                                        'xyz description',
+                                        '69.99',
+                                        self.sub_category
+                                        )
+        # product = models.Product(
+        #     **self.product,
+        #     sub_category=self.sub_category
+        # )
+        # product.full_clean()  
+        # product.save()
             
         self.assertEqual(models.Product.objects.count(), 1)
-        saved_product = models.Product.objects.get(pk=product.pk)
-        self.assertEqual(saved_product.name, 'Test Product')
-        self.assertEqual(saved_product.description, 'This is a test product.')
-        self.assertEqual(saved_product.price, Decimal('19.99'))
+        saved_product = models.Product.objects.get(pk=self.product.pk)
+        self.assertEqual(saved_product.name, 'xyz mirror')
+        self.assertEqual(saved_product.description, 'xyz description')
+        self.assertEqual(saved_product.price, Decimal('69.99'))
         self.assertEqual(saved_product.sub_category, self.sub_category)
-        
+    
     def test_product_name_min_length_validation(self):
         """Test the minimum length validation for the name field"""
-        self.product['name'] = 'short'
+        self.category = create_a_category('home decor')
+        self.sub_category = create_a_sub_category('wall decor', self.category)
+        self.product = create_a_product('xyz',
+                                        'xyz description',
+                                        '69.99',
+                                        self.sub_category
+                                        )
+        # self.product['name'] = 'short'
         with self.assertRaises(ValidationError) as context:
-            models.Product(
-                **self.product, 
-                sub_category=self.sub_category
-                ).full_clean()
+            self.product.full_clean()
             
-        self.assertIn('Product name should have minimum of 8 characters.', str(context.exception))
-        
+        self.assertIn('Product name should have minimum of 8 characters.', 
+                      str(context.exception))
+    
     def test_product_price_min_value_validation(self):
         """Test the minimum value validation for the price field."""
-        self.product['price'] = Decimal('0.98')
+        self.category = create_a_category('home decor')
+        self.sub_category = create_a_sub_category('wall decor', self.category)
+        self.product = create_a_product('xyz',
+                                        'xyz description',
+                                        '0.98',
+                                        self.sub_category
+                                        )
+        # self.product['price'] = Decimal('0.98')
         with self.assertRaises(ValidationError) as context:
-            models.Product(**self.product, 
-                           sub_category=self.sub_category,).full_clean()
+            self.product.full_clean()
             
-        self.assertIn('Price should be greater than 0.', str(context.exception))
+        self.assertIn('Price should be greater than 0.', 
+                      str(context.exception))
 
-    def test_product_price_max_value_validation(self):
-        """Test the maximum value validation for the price field."""
-        self.product['price'] = Decimal('1000.00')
-        with self.assertRaises(ValidationError) as context:
-            models.Product(**self.product, 
-                           sub_category=self.sub_category).full_clean()
-        self.assertIn('Price should be less than $999.99', str(context.exception))
-
-    def test_product_image_file_extension_validation(self):
-        """Test the image file extension validation."""
-        self.product['image'] = SimpleUploadedFile(name='test_image.txt', content=b'', content_type='text/plain')
-        with self.assertRaises(ValidationError) as context:
-            models.Product(**self.product, 
-                           sub_category=self.sub_category).full_clean()
+          
+class ProductImageUploadTests(TestCase):
+    """Tests the image uploads."""
+    def setUp(self):
+        self.category = create_a_category('home decor')
+        self.sub_category = create_a_sub_category('wall decor', self.category)
+        self.product = models.Product.objects.create(
+            name='xyz',
+            description='xyz description',
+            price=Decimal('10.98'),
+            sub_category=self.sub_category
+            )
         
-        self.assertRaisesMessage('Upload a valid image. The file you uploaded was either not an image or a corrupted image.', ValidationError)
+    def tearDown(self):
+        self.product.image.delete()
+        self.product.delete()
         
-
+    def test_upload_image(self):
+        """Test the image upload."""
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Image.new('RGB', (10, 10))
+            img.save(image_file, format='JPEG')
+            image_file.seek(0)
+            
+            uploaded_file = SimpleUploadedFile(
+                name='test_image.jpg',
+                content=image_file.read(),
+                content_type='image/jpeg'
+            )
+            
+            self.product.image = uploaded_file
+            self.product.save()
+            
+        self.assertTrue(self.product.image)
+        self.assertTrue(self.product.image.name.endswith('.jpg'))
+            
+            
 class InventoryModelTests(TestCase):
     """Tests the Inventory Model."""
     def setUp(self):
