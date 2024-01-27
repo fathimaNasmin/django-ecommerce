@@ -247,20 +247,14 @@ class InventoryModelTests(TestCase):
 class DiscountModelTests(TestCase):
     """Test for model discount."""
     def setUp(self):
-        self.category = models.Category.objects.create(
-            name='cat1'
-        )
-        self.sub_category = models.SubCategory.objects.create(
-            name='sub_cat1',
-            category=self.category
-        )
+        self.category = create_a_category('home decor')
+        self.sub_category = create_a_sub_category('wall decor', self.category)
         self.product = models.Product.objects.create(
-            name='Test Product', 
-            description='This is a test product.', 
-            price=Decimal('19.99'), 
-            image=SimpleUploadedFile(name='test_image.jpg', content=b'', content_type='image/jpeg'),
+            name='xyz',
+            description='xyz description',
+            price=Decimal('10.98'),
             sub_category=self.sub_category
-        )
+            )
     
     def tearDown(self):
         """Delete any created instances after each test method."""
@@ -284,7 +278,8 @@ class DiscountModelTests(TestCase):
                 product=self.product
             ).full_clean()
             
-        self.assertRaisesMessage("Discount should be minimum of 0.1%%", ValidationError)
+        self.assertRaisesMessage("Discount should be minimum of 0.1%%", 
+                                 ValidationError)
         self.assertIn('percent', str(context.exception))
         
     def test_max_discount_raises_error(self):
@@ -296,8 +291,10 @@ class DiscountModelTests(TestCase):
                 product=self.product
             ).full_clean()
             
-        self.assertRaisesMessage('Discount should not exceed 99.99%%', ValidationError)
-        self.assertRaisesMessage('Ensure that there are no more than 4 digits in total.', ValidationError)
+        self.assertRaisesMessage('Discount should not exceed 99.99%%', 
+                                 ValidationError)
+        self.assertRaisesMessage('Ensure that there are no more than 4 digits in total.', 
+                                 ValidationError)
         self.assertIn('percent', str(context.exception))
         
     
