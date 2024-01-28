@@ -7,6 +7,10 @@ from django.contrib.auth.models import (AbstractBaseUser,
                                         PermissionsMixin)
 from django.core.exceptions import ValidationError
 
+from store.models import Product
+
+from django.core import validators
+
 
 # Custom Model Validation 
 def validate_zipcode(zipcode):
@@ -61,7 +65,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 class ShippingAddress(models.Model):
     """Shipping Address of the user."""
     street = models.CharField(max_length=255)
-    building = models.IntegerField()
+    building = models.IntegerField(null=True)
     city = models.CharField(max_length=255)
     state = models.CharField(max_length=255)
     zipcode = models.IntegerField(validators=[validate_zipcode])
@@ -72,4 +76,15 @@ class ShippingAddress(models.Model):
     
     class Meta:
         verbose_name_plural = 'Shipping Address'
-    
+        
+        
+class CartItem(models.Model):
+    """Cart of the user."""
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1, 
+                                   validators=[validators.MinValueValidator(
+                                       limit_value=1)])
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"CartItem of {self.user.name}"    
