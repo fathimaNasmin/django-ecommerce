@@ -1,23 +1,15 @@
 """Tests the Store models
 """
-from django.test import override_settings
-import shutil
 from django.test import TestCase
 from store import models
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.files import File
 from django.db.utils import IntegrityError
 
 import tempfile
 from decimal import Decimal
 from PIL import Image
-import datetime
-
-
-# SimpleUploadedFile(name='test_image.jpg', content=b'', content_type='image/jpeg')
-TEST_DIR = 'test_data'
 
 
 def create_a_product(p_name, p_desc, p_price, subcategory):
