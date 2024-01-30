@@ -3,6 +3,14 @@
 **/__pycache__/
 __pycache__/
 *.pyc
+*.*.pyc
 
 #Ignore env file
 .env
+
+#Ignore media file
+media/
+
+
+
+

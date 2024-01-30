@@ -3,6 +3,7 @@
 from django.db import models
 
 from django.core import validators
+from PIL import Image
 
 
 # Custom model Validation
@@ -75,6 +76,18 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         self.name = self.name.lower()
         super().save(*args, **kwargs)
+        
+        img = Image.open(self.image.path)  # Open image
+
+        # resize image
+        if img.height > 400 or img.width > 400:
+            output_size = (400, 400)
+            img.thumbnail(output_size)  # Resize image
+            # Save it again and override the larger image
+            img.save(self.image.path)
+            
+    def __str__(self):
+        return f"{self.sub_category.name}-{self.name[:10]}"
 
     
 class Inventory(models.Model):
@@ -92,7 +105,7 @@ class Inventory(models.Model):
         verbose_name_plural = 'Inventories'
         
     def __str__(self):
-        return f"Inventory- {self.product.name}"
+        return f"Inventory- {self.product.name[:8]}-{self.quantity}"
 
     
 class Discount(models.Model):
