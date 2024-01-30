@@ -5,8 +5,15 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _ 
 
 from user import models
+from order.models import Order
 
 
+class UserOrders(admin.TabularInline):
+    model = Order
+    extra = 0
+    readonly_fields = ('order_id', 'order_date', 'amount')
+   
+    
 class ShippingAddressInline(admin.TabularInline):
     """
     Tabular Inline in useradmin for showing the 
@@ -45,7 +52,7 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
     list_filter = ('created_at',)
-    inlines = [ShippingAddressInline]
+    inlines = [ShippingAddressInline, UserOrders]
 
 
 class ShippingAddressAdmin(admin.ModelAdmin):

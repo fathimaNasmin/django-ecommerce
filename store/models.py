@@ -28,7 +28,7 @@ class SubCategory(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     
     class Meta:
-        verbose_name = 'Sub Category'
+        verbose_name_plural = 'Sub Category'
         constraints = [
             models.UniqueConstraint(
                 fields=['name', 'category'],
@@ -83,6 +83,12 @@ class Inventory(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    
+    class Meta:
+        verbose_name_plural = 'Inventories'
+        
+    def __str__(self):
+        return f"Inventory- {self.product.name}"
 
     
 class Discount(models.Model):
