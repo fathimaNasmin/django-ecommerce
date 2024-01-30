@@ -71,6 +71,10 @@ class Product(models.Model):
                                   ])
     created_at = models.DateField(auto_now_add=True)
     sub_category = models.ForeignKey(SubCategory, on_delete=models.CASCADE)
+    
+    def save(self, *args, **kwargs):
+        self.name = self.name.lower()
+        super().save(*args, **kwargs)
 
     
 class Inventory(models.Model):
