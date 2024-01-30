@@ -92,7 +92,7 @@ class Product(models.Model):
     
 class Inventory(models.Model):
     """Inventory of the product."""
-    quantity = models.IntegerField(default=0,
+    quantity = models.IntegerField(default=20,
                                    validators=[
                                        validators.MinValueValidator(limit_value=0),
                                        validators.MaxValueValidator(limit_value=50)
