@@ -1,5 +1,7 @@
 """Tests the Store models
 """
+import datetime
+from django.utils import timezone
 from django.test import TestCase
 from store import models
 
@@ -12,12 +14,29 @@ from decimal import Decimal
 from PIL import Image
 
 
+def create_test_image():
+    """Test to create image for testing."""
+    with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+        img = Image.new('RGB', (10, 10))
+        img.save(image_file, format='JPEG')
+        image_file.seek(0)
+        
+        uploaded_file = SimpleUploadedFile(
+            name='test_image.jpg',
+            content=image_file.read(),
+            content_type='image/jpeg'
+        )
+    return uploaded_file
+
+
 def create_a_product(p_name, p_desc, p_price, subcategory):
     """A helper function to create and return a product."""
+    test_image = create_test_image()
     return models.Product.objects.create(
             name=p_name, 
             description=p_desc, 
             price=Decimal(p_price),
+            image=test_image,
             sub_category=subcategory
     )
     
@@ -149,35 +168,22 @@ class ProductModelTests(TestCase):
 class ProductImageUploadTests(TestCase):
     """Tests the image uploads."""
     def setUp(self):
+        test_image = create_test_image()
         self.category = create_a_category('home decor')
         self.sub_category = create_a_sub_category('wall decor', self.category)
         self.product = models.Product.objects.create(
             name='xyz',
             description='xyz description',
             price=Decimal('10.98'),
+            image=test_image,
             sub_category=self.sub_category
             )
         
     def tearDown(self):
-        self.product.image.delete()
         self.product.delete()
         
     def test_upload_image(self):
         """Test the image upload."""
-        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
-            img = Image.new('RGB', (10, 10))
-            img.save(image_file, format='JPEG')
-            image_file.seek(0)
-            
-            uploaded_file = SimpleUploadedFile(
-                name='test_image.jpg',
-                content=image_file.read(),
-                content_type='image/jpeg'
-            )
-            
-            self.product.image = uploaded_file
-            self.product.save()
-            
         self.assertTrue(self.product.image)
         self.assertTrue(self.product.image.name.endswith('.jpg'))
             
@@ -185,14 +191,17 @@ class ProductImageUploadTests(TestCase):
 class InventoryModelTests(TestCase):
     """Tests the Inventory Model."""
     def setUp(self):
+        test_image = create_test_image()
         self.category = create_a_category('home decor')
         self.sub_category = create_a_sub_category('wall decor', self.category)
-        self.product = models.Product.objects.create(
+        self.product = models.Product(
             name='xyz',
             description='xyz description',
             price=Decimal('10.98'),
             sub_category=self.sub_category
-            )
+        )
+        self.product.image = test_image
+        self.product.save()
         
     def tearDown(self):
         """Delete any created instances after each test method."""
@@ -211,7 +220,7 @@ class InventoryModelTests(TestCase):
         inv_default = models.Inventory.objects.create(
             product=self.product
         )
-        self.assertEqual(inv_default.quantity, 0)
+        self.assertEqual(inv_default.quantity, 20)
         
     def test_negative_quantity_inventory_error(self):
         """Test the inventory quantity less than 0 raises error."""
@@ -239,14 +248,18 @@ class InventoryModelTests(TestCase):
 class DiscountModelTests(TestCase):
     """Test for model discount."""
     def setUp(self):
+        self.future_date = timezone.now() + timezone.timedelta(days=50)
+        test_image = create_test_image()
         self.category = create_a_category('home decor')
         self.sub_category = create_a_sub_category('wall decor', self.category)
-        self.product = models.Product.objects.create(
+        self.product = models.Product(
             name='xyz',
             description='xyz description',
             price=Decimal('10.98'),
             sub_category=self.sub_category
-            )
+        )
+        self.product.image = test_image
+        self.product.save()
     
     def tearDown(self):
         """Delete any created instances after each test method."""
@@ -257,6 +270,7 @@ class DiscountModelTests(TestCase):
         models.Discount.objects.create(
             percent=Decimal(10.99),
             active=True,
+            valid_till=self.future_date,
             product=self.product
         )
         self.assertEqual(models.Discount.objects.count(), 1)
@@ -267,6 +281,7 @@ class DiscountModelTests(TestCase):
             models.Discount.objects.create(
                 percent=Decimal(0.02),
                 active=True,
+                valid_till=self.future_date,
                 product=self.product
             ).full_clean()
             
@@ -280,6 +295,7 @@ class DiscountModelTests(TestCase):
             models.Discount.objects.create(
                 percent=Decimal(99.99),
                 active=True,
+                valid_till=self.future_date,
                 product=self.product
             ).full_clean()
             
