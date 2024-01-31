@@ -99,7 +99,7 @@ class Inventory(models.Model):
                                    ])
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name='product_inventory', on_delete=models.CASCADE)
     
     class Meta:
         verbose_name_plural = 'Inventories'
@@ -125,5 +125,6 @@ class Discount(models.Model):
                                     ])
     
     active = models.BooleanField(default=False, verbose_name='Is on sale')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    valid_till = models.DateTimeField()
+    product = models.ForeignKey(Product, related_name='discount', on_delete=models.CASCADE)
     
