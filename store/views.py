@@ -14,9 +14,10 @@ from django.db.models import Prefetch
 
 class CategoryViewSet(viewsets.ModelViewSet):
     """View to lists all Category."""
-    queryset = Category.objects.all().order_by('id')
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
 
 class SubCategoryViewSet(viewsets.ModelViewSet):
     """View to lists all subcategory."""
