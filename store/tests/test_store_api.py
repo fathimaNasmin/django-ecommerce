@@ -33,6 +33,10 @@ SUB_CATEGORY_URL = reverse('store:sub-category-list')
 PRODUCT_URL = reverse('store:product-list')
 
 
+def sub_category_detail_url(id):
+    """create and return subcategory detail url."""
+    return reverse('store:sub-category-detail', args=[id])
+
 def category_detail_url(id):
     """create and return category detail url."""
     return reverse('store:category-detail', args=[id])
@@ -186,7 +190,7 @@ class PublicAPITests(TestCase):
 
 class AdminAPITests(TestCase):
     """Test Admin api end points."""
-    
+
     def setUp(self):
         self.client = APIClient()
         self.admin_user = get_user_model().objects.create_superuser(
@@ -194,7 +198,7 @@ class AdminAPITests(TestCase):
             password='admin123455'
         )
         self.client.force_authenticate(self.admin_user)
-        
+
     def test_get_category_admin_user(self):
         """Test get category for admin user."""
         create_category('categor1')
@@ -207,7 +211,7 @@ class AdminAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
-        
+
     def test_create_category_admin_user(self):
         """Test create category only by admin user."""
         payload = {
@@ -220,15 +224,28 @@ class AdminAPITests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res.data, serializer.data)
         
+    def test_new_category_with_new_subcategories(self):
+        """Test posting new category with new subcategories."""
+        payload = {
+            'name': 'new_cat',
+            'sub_category': [
+                {'name': 'new sub category'}
+            ]
+        }
+        
+        res = self.client.post(CATEGORY_URL, payload)
+        
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
     def test_patch_category_admin_user(self):
         """Test editing the category name by the admin user."""
         clothing = create_category(name='clothing')
 
         payload = {'name': 'fashion'}
         url = category_detail_url(clothing.id)
-        
+
         res = self.client.patch(url, payload)
-        
+
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         clothing.refresh_from_db()
         self.assertEqual(clothing.name, payload['name'])
@@ -238,37 +255,71 @@ class AdminAPITests(TestCase):
         clothing = create_category(name='clothing')
 
         url = category_detail_url(clothing.id)
-        
+
         res = self.client.delete(url)
-        
+
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         clothing_exists = Category.objects.filter(name='clothing').exists()
         self.assertFalse(clothing_exists)
-        
+
     def test_get_category_detail_admin_user(self):
         """Test get category detail for admin user."""
         arts = create_category(name='arts')
         url = category_detail_url(arts.id)
-        
+
         res = self.client.get(url)
-        
+
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         serializer = CategorySerializer(arts)
         self.assertEqual(res.data, serializer.data)
-        
+
     def test_post_sub_category_to_existing_category(self):
         """Test posting sub category to existing category."""
         self.client.force_authenticate(self.admin_user)
 
         test_category = create_category(name='testcategory')
-        
+
         payload = {
             'name': 'test_sub_cat',
             'category': test_category.id
         }
         res = self.client.post(SUB_CATEGORY_URL, payload)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        
+
         test_sub_category = SubCategory.objects.get(category=test_category)
         serializer = SubCategorySerializer(test_sub_category)
         self.assertEqual(res.data, serializer.data)
+        
+    def test_patch_sub_category(self):
+        """Test update sub category."""
+        cat_test1 = create_category(name='test_cat1')
+        sub_cat = create_sub_category(
+            name='sub_cat1',
+            category=cat_test1
+        )
+        
+        payload = {
+            'name': 'update_sub_cat',
+            'category': cat_test1.id
+        }
+        
+        url = sub_category_detail_url(sub_cat.id)
+        res = self.client.patch(url, payload)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        
+        obj = SubCategory.objects.get(name=payload['name'])
+        serializer = SubCategorySerializer(obj)
+        
+        self.assertEqual(res.data, serializer.data)
+        
+    def test_delete_sub_category(self):
+        """Test delete sub category."""
+        cat_test1 = create_category(name='test_cat1')
+        sub_cat = create_sub_category(
+            name='sub_cat1',
+            category=cat_test1
+        )
+
+        url = sub_category_detail_url(sub_cat.id)
+        res = self.client.delete(url)
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)

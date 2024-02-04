@@ -42,7 +42,8 @@ class SubCategoryViewSet(viewsets.ModelViewSet):
     queryset = SubCategory.objects.all().order_by('id')
     serializer_class = SubCategorySerializer
     permission_classes = [AdminOnlyPermission]
-    
+
+
 class ProductViewSet(viewsets.ModelViewSet):
     """View to lists all products."""
     queryset = Product.objects.all().order_by('id')[:5]

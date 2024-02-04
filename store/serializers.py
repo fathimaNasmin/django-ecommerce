@@ -7,7 +7,8 @@ from rest_framework import serializers
 
 class SubCategorySerializer(serializers.ModelSerializer):
     """Serializer for subcategory."""
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all())
 
     class Meta:
         model = SubCategory
