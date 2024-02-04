@@ -26,7 +26,9 @@ class Category(models.Model):
 class SubCategory(models.Model):
     """Sub Category model for products."""
     name = models.CharField(max_length=255)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, 
+                                 related_name='category', 
+                                 on_delete=models.CASCADE)
     
     class Meta:
         verbose_name_plural = 'Sub Category'

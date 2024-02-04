@@ -1,16 +1,8 @@
 """Serializers for Store Models."""
-from django.forms.models import model_to_dict
 from django.utils import timezone
 from store.models import Category, SubCategory, Product, Inventory, Discount
 
 from rest_framework import serializers
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    """Serializer for Category."""
-    class Meta:
-        model = Category
-        fields = ['id', 'name']
 
 
 class SubCategorySerializer(serializers.ModelSerializer):
@@ -20,6 +12,33 @@ class SubCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SubCategory
         fields = ['id', 'name', 'category']
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """Serializer for Category."""
+    sub_category = SubCategorySerializer(many=True,
+                                         read_only=False,
+                                         required=False)
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'sub_category']
+
+    def create(self, validated_data):
+        sub_category = validated_data.pop("sub_category", [])
+        name = validated_data.get("name", None)
+
+        if name:
+            name = name.lower()
+        try:
+            category = Category.objects.get(name=name)
+        except Category.DoesNotExist:
+            category = Category.objects.create(name=name)
+
+        if sub_category:
+            for item in sub_category:
+                SubCategory.objects.create(category=category, **item)
+        return category
 
 
 class InventorySerializer(serializers.ModelSerializer):
