@@ -8,10 +8,10 @@ from store import views
 
 
 router = routers.DefaultRouter()
-router.register('category', views.CategoryViewSet, basename='category')
+router.register('category', views.CategoryViewSet)
 router.register('sub-category', views.SubCategoryViewSet,
                 basename='sub-category')
-router.register('product', views.ProductViewSet, basename='product')
+router.register('product', views.ProductViewSet)
 
 app_name = 'store'
 

@@ -8,6 +8,13 @@ from store.serializers import (CategorySerializer,
 from rest_framework import permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.mixins import (ListModelMixin,
+                                   RetrieveModelMixin,
+                                   CreateModelMixin,
+                                   UpdateModelMixin,
+                                   DestroyModelMixin)
+
 
 from django.db.models import Prefetch
 
@@ -39,13 +46,41 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 class SubCategoryViewSet(viewsets.ModelViewSet):
     """View to lists all subcategory."""
-    queryset = SubCategory.objects.all().order_by('id')
+    queryset = SubCategory.objects.all()
     serializer_class = SubCategorySerializer
     permission_classes = [AdminOnlyPermission]
 
 
+# class ProductViewSet(ListModelMixin,
+#                      RetrieveModelMixin,
+#                      CreateModelMixin,
+#                      UpdateModelMixin,
+#                      DestroyModelMixin,
+#                      viewsets.GenericViewSet):
+#     """A simple viewset for listing and retrieving products."""
+#     queryset = Product.objects.all()
+#     serializer_class = ProductSerializer
+#     permission_classes = [AdminOnlyPermission]
+
+#     def perform_create(self, serializer):
+
+#         serializer.save()
+
 class ProductViewSet(viewsets.ModelViewSet):
-    """View to lists all products."""
-    queryset = Product.objects.all().order_by('id')[:5]
+    """A simple viewset for listing and retrieving products."""
+    queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [AdminOnlyPermission]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            # Handle the case where validation fails
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def perform_create(self, serializer):
+        serializer.save()

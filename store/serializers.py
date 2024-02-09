@@ -1,4 +1,5 @@
 """Serializers for Store Models."""
+from django.db import IntegrityError
 from django.utils import timezone
 from store.models import Category, SubCategory, Product, Inventory, Discount
 
@@ -13,6 +14,7 @@ class SubCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SubCategory
         fields = ['id', 'name', 'category']
+        read_only_fields = ['id']
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -24,6 +26,7 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name', 'sub_category']
+        read_only_fields = ['id']
 
     def create(self, validated_data):
         sub_category = validated_data.pop("sub_category", [])
@@ -44,28 +47,35 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class InventorySerializer(serializers.ModelSerializer):
     """Serializer for inventory."""
-    created_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
-    modified_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+    created_at = serializers.DateTimeField(
+        format='%Y-%m-%d %H:%M:%S', required=False)
+    modified_at = serializers.DateTimeField(
+        format='%Y-%m-%d %H:%M:%S', required=False)
 
     class Meta:
         model = Inventory
         fields = ['id', 'quantity', 'created_at', 'modified_at']
+        read_only_fields = ['id']
 
 
 class DiscountSerializer(serializers.ModelSerializer):
     """Serializer for Discount."""
-    created_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
-    modified_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
-    valid_till = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+    created_at = serializers.DateTimeField(
+        format='%Y-%m-%d %H:%M:%S', required=False)
+    modified_at = serializers.DateTimeField(
+        format='%Y-%m-%d %H:%M:%S', required=False)
+    valid_till = serializers.DateTimeField(
+        format='%Y-%m-%d %H:%M:%S', required=False)
 
     class Meta:
         model = Discount
         fields = ['id', 'percent', 'active',
                   'created_at', 'modified_at', 'valid_till']
+        read_only_fields = ['id']
 
     def validate_valid_till(self, date):
         """Validate valid_till date is a future date."""
-        current_date = timezone.now().date()
+        current_date = timezone.now()
 
         if date <= current_date:
             raise serializers.ValidationError(
@@ -76,9 +86,11 @@ class DiscountSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     """Serializer for products."""
-    sub_category = SubCategorySerializer()
-    product_inventory = InventorySerializer(read_only=True, many=True)
-    discount = DiscountSerializer(read_only=True, many=True)
+    image = serializers.ImageField()
+    sub_category = serializers.PrimaryKeyRelatedField(
+        queryset=SubCategory.objects.all())
+    product_inventory = InventorySerializer(many=True, required=False)
+    discount = DiscountSerializer(many=True, required=False)
 
     class Meta:
         model = Product
@@ -86,3 +98,28 @@ class ProductSerializer(serializers.ModelSerializer):
                   'product_inventory',
                   'discount',
                   'sub_category']
+        read_only_fields = ['id']
+
+    def create(self, validated_data):
+        product_inventory_data = validated_data.pop('product_inventory', [])
+        discount_data = validated_data.pop('discount', [])
+
+        # Create Product instance
+        product = Product.objects.create(**validated_data)
+
+        # Create inventory instance
+        for item in product_inventory_data:
+            Inventory.objects.create(product=product,
+                                     **item)
+
+        # Create discount instance
+        for discounted_item in discount_data:
+            Discount.objects.create(product=product,
+                                    **discounted_item)
+            
+        try:
+            return super().create(validated_data)
+        except IntegrityError as e:
+            raise serializers.ValidationError({'detail': str(e)})
+
+        return product
