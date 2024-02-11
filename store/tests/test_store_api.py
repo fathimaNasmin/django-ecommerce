@@ -398,11 +398,10 @@ class AdminAPITests(TestCase):
         self.assertEqual(res.data['name'], serializer.data['name'])
 
     def test_post_product_admin_user(self):
-        """Test post product by admin."""
+        """Test post product by admin without nested data."""
         new_cat = create_category()
         new_sub_cat = create_sub_category(name='sub_cat34', category=new_cat)
         image = create_test_image()
-        # valid_till = timezone.now() + timezone.timedelta(days=30)
 
         payload = {
             'name': 'product1',
@@ -423,8 +422,49 @@ class AdminAPITests(TestCase):
         for key, value in payload.items():
             self.assertEqual(res.data[key], serializer.data[key])
 
+    def test_post_product_nested_data(self):
+        """Test posting product with nested data without image field."""
+        new_cat = create_category()
+        new_sub_cat = create_sub_category(name='sub_cat34', category=new_cat)
+        valid_till = timezone.now() + timezone.timedelta(days=30)
+
+        payload1 = {
+            "name": "product1",
+            "price": "9.99",
+            "description": "product 1 description",
+            "sub_category": new_sub_cat.id,
+            "product_inventory": [
+                {
+                    "quantity": 20,
+                    "created_at": "2024-01-30 20:18:44",
+                    "modified_at": "2024-01-30 20:18:44"
+                },
+                {
+                    "quantity": 10,
+                    "created_at": "2024-02-03 20:18:44",
+                    "modified_at": "2024-02-03 20:18:44"
+                }
+            ],
+            "discount": [
+                {
+                    'percent': '2.00',
+                    'active': True,
+                    'valid_till': valid_till
+                }
+            ],
+
+        }
+
+        res = self.client.post(PRODUCT_URL, payload1, format='json')
+        
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
     def test_post_already_exists(self):
         """Test post product already exists raises error."""
+        pass
+    
+    def test_post_with_invalid_discount_date(self):
+        """Test post with invalid date raises error."""
         pass
 
     def test_patch_product_admin(self):

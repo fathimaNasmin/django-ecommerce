@@ -86,7 +86,6 @@ class DiscountSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     """Serializer for products."""
-    image = serializers.ImageField()
     sub_category = serializers.PrimaryKeyRelatedField(
         queryset=SubCategory.objects.all())
     product_inventory = InventorySerializer(many=True, required=False)
@@ -108,18 +107,19 @@ class ProductSerializer(serializers.ModelSerializer):
         product = Product.objects.create(**validated_data)
 
         # Create inventory instance
-        for item in product_inventory_data:
-            Inventory.objects.create(product=product,
-                                     **item)
+        try:
+            for item in product_inventory_data:
+                inv = Inventory.objects.create(product=product,
+                                         **item)
+                product.inventory.add(inv)
+                
+        except Exception as e:
+            print("Inv not created: ", e)
 
         # Create discount instance
         for discounted_item in discount_data:
-            Discount.objects.create(product=product,
+            discount_instance = Discount.objects.create(product=product,
                                     **discounted_item)
-            
-        try:
-            return super().create(validated_data)
-        except IntegrityError as e:
-            raise serializers.ValidationError({'detail': str(e)})
+            product.discount.add(discount_instance)
 
         return product

@@ -69,6 +69,7 @@ class Product(models.Model):
                                 )
     image = models.ImageField(upload_to='products/images/',
                               null=True,
+                              blank=True,
                               validators=[
                                   validators.validate_image_file_extension
                               ])
@@ -79,14 +80,15 @@ class Product(models.Model):
         self.name = self.name.lower()
         super().save(*args, **kwargs)
 
-        img = Image.open(self.image.path)  # Open image
+        if self.image:
+            img = Image.open(self.image.path)  # Open image
 
-        # resize image
-        if img.height > 400 or img.width > 400:
-            output_size = (400, 400)
-            img.thumbnail(output_size)  # Resize image
-            # Save it again and override the larger image
-            img.save(self.image.path)
+            # resize image
+            if img.height > 400 or img.width > 400:
+                output_size = (400, 400)
+                img.thumbnail(output_size)  # Resize image
+                # Save it again and override the larger image
+                img.save(self.image.path)
 
     def __str__(self):
         return f"{self.sub_category.name}-{self.name[:10]}"
