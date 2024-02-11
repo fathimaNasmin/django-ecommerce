@@ -1,5 +1,5 @@
 """Tests for store api end points."""
-import io
+
 import tempfile
 from decimal import Decimal
 from PIL import Image
@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from rest_framework import status, serializers
 from rest_framework.test import APIClient
+from rest_framework.exceptions import ValidationError
 
 from django.contrib.auth import get_user_model
 from store.models import (
@@ -124,7 +125,7 @@ class PublicAPITests(TestCase):
 
     def test_get_category(self):
         """test listing category api."""
-        create_category('category1')
+        create_category('category10')
         create_category('category2')
 
         res = self.client.get(CATEGORY_URL)
@@ -456,20 +457,74 @@ class AdminAPITests(TestCase):
         }
 
         res = self.client.post(PRODUCT_URL, payload1, format='json')
-        
+
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
-    def test_post_already_exists(self):
+    def test_post_product_already_exists(self):
         """Test post product already exists raises error."""
-        pass
-    
+        create_product(name='existing product')
+
+        new_cat = create_category(name='test_existing product')
+        new_sub_cat = create_sub_category(
+            name='test_sub_cat3', category=new_cat)
+        image = create_test_image()
+
+        payload = {
+            'name': 'existing product',
+            'description': 'product 1 description',
+            'price': '30.00',
+            'image': image[0],
+            'sub_category': new_sub_cat.id
+        }
+
+        res = self.client.post(PRODUCT_URL, payload, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+        serializer = ProductSerializer(data=payload)
+
+        with self.assertRaises(ValidationError) as error:
+            serializer.is_valid(raise_exception=True)
+
+        self.assertIn('name', str(error.exception.detail).lower())
+
     def test_post_with_invalid_discount_date(self):
         """Test post with invalid date raises error."""
-        pass
+        new_cat = create_category('invalid product')
+        new_sub_cat = create_sub_category(name='sub_cat134', category=new_cat)
+        valid_till = timezone.now() - timezone.timedelta(days=30)
+
+        payload1 = {
+            "name": "product111",
+            "price": "9.99",
+            "description": "product 1 description",
+            "sub_category": new_sub_cat.id,
+            "discount": [
+                {
+                    'percent': '2.00',
+                    'active': True,
+                    'valid_till': valid_till
+                }
+            ],
+
+        }
+
+        res = self.client.post(PRODUCT_URL, payload1, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+        serializer = ProductSerializer(data=payload1)
+
+        with self.assertRaises(ValidationError) as error:
+            serializer.is_valid(raise_exception=True)
+
+        print(error.exception)
+        self.assertIn('discount',
+                      str(error.exception.detail).lower())
 
     def test_patch_product_admin(self):
         """Test patch product for admin."""
-        new_product = create_product()
+        new_product = create_product(name='test_patch')
 
         payload = {
             'name': 'change product name',

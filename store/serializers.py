@@ -99,27 +99,40 @@ class ProductSerializer(serializers.ModelSerializer):
                   'sub_category']
         read_only_fields = ['id']
 
+    def validate_name(self, name):
+        """Validate name of the product if it already exists."""
+        name_exists = Product.objects.filter(name=name).exists()
+
+        if name_exists:
+            raise serializers.ValidationError("This product already exists.")
+
+        return name
+
     def create(self, validated_data):
         product_inventory_data = validated_data.pop('product_inventory', [])
         discount_data = validated_data.pop('discount', [])
 
         # Create Product instance
         product = Product.objects.create(**validated_data)
-
+        
         # Create inventory instance
         try:
-            for item in product_inventory_data:
-                inv = Inventory.objects.create(product=product,
-                                         **item)
-                product.inventory.add(inv)
-                
+            if product_inventory_data:
+                for item in product_inventory_data:
+                    inv = Inventory.objects.create(product=product,
+                                                   **item)
+                    product.product_inventory.add(inv)
         except Exception as e:
             print("Inv not created: ", e)
-
+        
         # Create discount instance
-        for discounted_item in discount_data:
-            discount_instance = Discount.objects.create(product=product,
-                                    **discounted_item)
-            product.discount.add(discount_instance)
-
+        try:
+            if discount_data:
+                for discounted_item in discount_data:
+                    discount_instance = Discount.objects.create(product=product,
+                                                                **discounted_item)
+                    product.discount.add(discount_instance)
+        except Exception as e:
+            print("Discount is empty: ", e)
+        
         return product

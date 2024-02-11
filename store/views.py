@@ -49,22 +49,7 @@ class SubCategoryViewSet(viewsets.ModelViewSet):
     queryset = SubCategory.objects.all()
     serializer_class = SubCategorySerializer
     permission_classes = [AdminOnlyPermission]
-
-
-# class ProductViewSet(ListModelMixin,
-#                      RetrieveModelMixin,
-#                      CreateModelMixin,
-#                      UpdateModelMixin,
-#                      DestroyModelMixin,
-#                      viewsets.GenericViewSet):
-#     """A simple viewset for listing and retrieving products."""
-#     queryset = Product.objects.all()
-#     serializer_class = ProductSerializer
-#     permission_classes = [AdminOnlyPermission]
-
-#     def perform_create(self, serializer):
-
-#         serializer.save()
+    
 
 class ProductViewSet(viewsets.ModelViewSet):
     """A simple viewset for listing and retrieving products."""
