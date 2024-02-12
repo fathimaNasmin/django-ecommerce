@@ -518,7 +518,6 @@ class AdminAPITests(TestCase):
         with self.assertRaises(ValidationError) as error:
             serializer.is_valid(raise_exception=True)
 
-        print(error.exception)
         self.assertIn('discount',
                       str(error.exception.detail).lower())
 
@@ -558,3 +557,24 @@ class AdminAPITests(TestCase):
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        
+    def test_create_inventory_update_product(self):
+        """Test creating inventory on update of a product."""
+        
+        product = create_product(name='phone')
+        
+        payload = {
+            'product_inventory': [
+                {
+                    'quantity': 20
+                }
+            ]
+        }
+        url = product_detail_url(product.id)
+        res = self.client.patch(url, payload, format='json')
+        
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        new_inventory = Inventory.objects.get(product=product).first()
+        self.assertEqual(res.product_inventory.quantity, 
+                         new_inventory.quantity)
+        
