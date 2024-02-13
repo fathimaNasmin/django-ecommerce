@@ -99,6 +99,13 @@ class ProductSerializer(serializers.ModelSerializer):
                   'sub_category']
         read_only_fields = ['id']
 
+    def _get_or_create_inventory(self, inventory, product):
+        """Helper fuction to get or create an inventory."""
+        inv, created = Inventory.objects.get_or_create(product=product)
+        for item in inventory:
+            inv.quantity = item['quantity']
+        return inv
+
     def validate_name(self, name):
         """Validate name of the product if it already exists."""
         name_exists = Product.objects.filter(name=name).exists()
@@ -118,10 +125,10 @@ class ProductSerializer(serializers.ModelSerializer):
         # Create inventory instance
         try:
             if product_inventory_data:
-                for item in product_inventory_data:
-                    inv = Inventory.objects.create(product=product,
-                                                   **item)
-                    product.product_inventory.add(inv)
+                new_inventory = self._get_or_create_inventory(
+                    product_inventory_data, 
+                    product)
+                product.product_inventory.add(new_inventory)
         except Exception as e:
             print("Inv not created: ", e)
         
@@ -136,3 +143,25 @@ class ProductSerializer(serializers.ModelSerializer):
             print("Discount is empty: ", e)
         
         return product
+    
+    def update(self, instance, validated_data):
+        product_inventory_data = validated_data.pop('product_inventory', None)
+        discount_data = validated_data.pop('discount', [])
+        
+        if product_inventory_data is not None:
+            inv = self._get_or_create_inventory(product_inventory_data, 
+                                                instance)
+            instance.product_inventory.update(quantity=inv.quantity)
+
+        if discount_data:
+            for item in discount_data:
+                discount, created = Discount.objects.update_or_create(
+                    defaults=item,
+                    product=instance
+                )
+            
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance

@@ -557,12 +557,12 @@ class AdminAPITests(TestCase):
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
-        
+
     def test_create_inventory_update_product(self):
         """Test creating inventory on update of a product."""
-        
+
         product = create_product(name='phone')
-        
+
         payload = {
             'product_inventory': [
                 {
@@ -572,9 +572,85 @@ class AdminAPITests(TestCase):
         }
         url = product_detail_url(product.id)
         res = self.client.patch(url, payload, format='json')
-        
+
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        new_inventory = Inventory.objects.get(product=product).first()
-        self.assertEqual(res.product_inventory.quantity, 
+        new_inventory = Inventory.objects.get(product=product)
+        self.assertEqual(payload['product_inventory'][0]['quantity'],
                          new_inventory.quantity)
-        
+
+    def test_update_inventory_update_product(self):
+        """Test update the inventory of a product."""
+        product = create_product(name='bottles')
+        inventory = create_inventory(product=product)
+
+        payload = {
+            'product_inventory': [
+                {
+                    'quantity': 10
+                }
+            ]
+        }
+
+        url = product_detail_url(product.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        updated_inv = Inventory.objects.get(product=product)
+        inventory.refresh_from_db()
+        self.assertEqual(updated_inv.quantity,
+                         payload['product_inventory'][0]['quantity'])
+
+    def test_create_discount_on_update_product(self):
+        """Test creating discount on update of a product."""
+        valid_till = timezone.now() + timezone.timedelta(days=30)
+
+        product = create_product(name='laptop')
+
+        payload = {
+            'discount': [
+                {
+                    'percent': '50.00',
+                    'active': True,
+                    'valid_till': valid_till
+                }
+            ]
+        }
+        url = product_detail_url(product.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        serializer = ProductSerializer(product)
+        self.assertEqual(res.data['discount'], 
+                         serializer.data['discount'])
+
+    def test_update_discount_on_update_product(self):
+        """Test update the discount of a product."""
+        product = create_product(name='vgft')
+        discount = create_discount('2.99', product)
+        valid_till = timezone.now() + timezone.timedelta(days=60)
+
+        payload = {
+            'product_inventory': [
+                {
+                    'quantity': 15
+                }
+            ],
+            'discount': [
+                {
+                    'percent': '3.99',
+                    'active': True,
+                    'valid_till': valid_till
+                }
+            ]
+        }
+
+        url = product_detail_url(product.id)
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        updated_discount = Discount.objects.get(product=product)
+        updated_discount.refresh_from_db()
+        self.assertEqual(payload['discount'][0]
+                         ['percent'], str(updated_discount.percent))
