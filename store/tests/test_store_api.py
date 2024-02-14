@@ -34,6 +34,11 @@ SUB_CATEGORY_URL = reverse('store:sub-category-list')
 PRODUCT_URL = reverse('store:product-list')
 
 
+def image_upload_url(id):
+    """create and return image url."""
+    return reverse('store:image-upload', args=[id])
+
+
 def product_detail_url(id):
     """create and return detail url for product."""
     return reverse('store:product-detail', args=[id])
@@ -654,3 +659,52 @@ class AdminAPITests(TestCase):
         updated_discount.refresh_from_db()
         self.assertEqual(payload['discount'][0]
                          ['percent'], str(updated_discount.percent))
+
+
+class ProductImageTests(TestCase):
+    """Test uploading image of product."""
+    def setUp(self):
+        self.category = create_category(name='image category')
+        self.sub_category = create_sub_category(category=self.category, 
+                                                name='imag sub category')
+        self.client = APIClient()
+        
+        self.admin_user = get_user_model().objects.create_superuser(
+            email='admin@example.com',
+            password='admin123455'
+        )
+        self.client.force_authenticate(self.admin_user)
+        
+        self.product = Product.objects.create(
+            name='test image',
+            price=Decimal('20.99'),
+            description='test image upload description',
+            sub_category=self.sub_category
+        )
+    
+    def tearDown(self):
+        self.product.image.delete()
+        
+    def test_image_upload(self):
+        """Test image uploading on post."""
+        url = image_upload_url(self.product.id)
+        
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Image.new('RGB', (10, 10))
+            img.save(image_file, format='JPEG')
+            image_file.seek(0)
+            
+            payload = {'image': image_file}
+            res = self.client.post(url, payload, format='multipart')
+            
+        self.product.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('image', res.data)
+        
+    def test_image_bad_request(self):
+        """Test image upload on empty or wrong type."""
+        url = image_upload_url(self.product.id)
+        payload = {'image': 'image_file'}
+        res = self.client.post(url, payload, format='multipart')
+        
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
