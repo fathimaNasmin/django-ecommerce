@@ -36,7 +36,7 @@ PRODUCT_URL = reverse('store:product-list')
 
 def image_upload_url(id):
     """create and return image url."""
-    return reverse('store:image-upload', args=[id])
+    return reverse('store:product-upload-image', args=[id])
 
 
 def product_detail_url(id):
@@ -704,7 +704,7 @@ class ProductImageTests(TestCase):
     def test_image_bad_request(self):
         """Test image upload on empty or wrong type."""
         url = image_upload_url(self.product.id)
-        payload = {'image': 'image_file'}
+        payload = {'image': 'not an image_file'}
         res = self.client.post(url, payload, format='multipart')
         
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)

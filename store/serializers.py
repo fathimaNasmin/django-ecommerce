@@ -121,17 +121,17 @@ class ProductSerializer(serializers.ModelSerializer):
 
         # Create Product instance
         product = Product.objects.create(**validated_data)
-        
+
         # Create inventory instance
         try:
             if product_inventory_data:
                 new_inventory = self._get_or_create_inventory(
-                    product_inventory_data, 
+                    product_inventory_data,
                     product)
                 product.product_inventory.add(new_inventory)
         except Exception as e:
             print("Inv not created: ", e)
-        
+
         # Create discount instance
         try:
             if discount_data:
@@ -141,15 +141,15 @@ class ProductSerializer(serializers.ModelSerializer):
                     product.discount.add(discount_instance)
         except Exception as e:
             print("Discount is empty: ", e)
-        
+
         return product
-    
+
     def update(self, instance, validated_data):
         product_inventory_data = validated_data.pop('product_inventory', None)
         discount_data = validated_data.pop('discount', [])
-        
+
         if product_inventory_data is not None:
-            inv = self._get_or_create_inventory(product_inventory_data, 
+            inv = self._get_or_create_inventory(product_inventory_data,
                                                 instance)
             instance.product_inventory.update(quantity=inv.quantity)
 
@@ -159,9 +159,19 @@ class ProductSerializer(serializers.ModelSerializer):
                     defaults=item,
                     product=instance
                 )
-            
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         instance.save()
         return instance
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    """Serializer for uploading images."""
+
+    class Meta:
+        model = Product
+        fields = ['id', 'image']
+        read_only_fields = ['id']
+        extra_kwargs = {'image': {'required': 'True'}}
