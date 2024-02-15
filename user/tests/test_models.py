@@ -62,7 +62,7 @@ class ShippingAddressModelTests(TestCase):
             email='test@example.com',
             password='testpass'
         )
-        self.address = models.ShippingAddress.objects.create(
+        self.address = user_model.ShippingAddress.objects.create(
             street='3000 swallow hill rd',
             building='111',
             city='new jersey city',
@@ -79,7 +79,7 @@ class ShippingAddressModelTests(TestCase):
         
     def test_address_zipcode_raises_error(self):
         """Test the address zipcode validation error."""
-        invalid_zipcode = models.ShippingAddress.objects.create(
+        invalid_zipcode = user_model.ShippingAddress.objects.create(
             street='3000 swallow hill rd',
             building='111',
             city='new jersey city',
@@ -91,7 +91,7 @@ class ShippingAddressModelTests(TestCase):
         
     def test_empty_address_error(self):
         """Test empty address raises error."""
-        empty_address = models.ShippingAddress.objects.create(
+        empty_address = user_model.ShippingAddress.objects.create(
             street='',
             building=None,
             city='',
