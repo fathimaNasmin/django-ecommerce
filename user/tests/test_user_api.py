@@ -15,7 +15,7 @@ TOKEN_URL = reverse('user:token')
 
 def create_user(**params):
     """Create and returns new user."""
-    return get_user_model().objects.create(**params)
+    return get_user_model().objects.create_user(**params)
 
 
 class PublicApiTests(TestCase):
@@ -64,36 +64,38 @@ class PublicApiTests(TestCase):
     def test_create_token_user(self):
         """Test token for valid credentials."""
         user_details = {
+            'email': 'test123@example.com',
+            'password': 'dhjhdi&%*^%$IUhsg'
+        }
+        create_user(**user_details)
+
+        payload = {
+            'email': 'test123@example.com',
+            'password': 'dhjhdi&%*^%$IUhsg'
+        }
+
+        res = self.client.post(TOKEN_URL, payload)
+        
+        self.assertIn('token', res.data)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_user_invalid_credentials(self):
+        """Test no token on invalid credentials."""
+        user_details = {
             'email': 'test@example.com',
             'password': 'testpass123'
         }
         create_user(**user_details)
 
         payload = {
-            'email': user_details['email'],
-            'password': user_details['password']
-        }
-
-        res = self.client.post(TOKEN_URL, payload)
-        self.assertIn('token', res.data)
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-
-    def test_user_invalid_credentials(self):
-        """Test no token on invalid credentials."""
-        create_user({
-            'email': 'test@example.com',
-            'password': 'testpass123'
-        })
-        
-        payload = {
             'email': 'invalid@example.com',
             'password': 'passfhjgkdf'
         }
-        
+
         res = self.client.post(TOKEN_URL, payload)
         self.assertNotIn('token', res.data)
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
-        
+
     def test_user_blank_password(self):
         """Test posting with blank password raises error"""
 
