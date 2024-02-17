@@ -11,6 +11,7 @@ from rest_framework import status
 
 CREATE_USER_URL = reverse('user:register')
 TOKEN_URL = reverse('user:token')
+PROFILE_URL = reverse('user:profile')
 
 
 def create_user(**params):
@@ -75,7 +76,7 @@ class PublicApiTests(TestCase):
         }
 
         res = self.client.post(TOKEN_URL, payload)
-        
+
         self.assertIn('token', res.data)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
@@ -107,3 +108,51 @@ class PublicApiTests(TestCase):
         res = self.client.post(TOKEN_URL, payload)
         self.assertNotIn('token', res.data)
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_retrieve_user_unauthorized(self):
+        """Test authentication required."""
+        res = self.client.get(PROFILE_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class PrivateAPITests(TestCase):
+    """Test for private api."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = create_user(
+            email='test@example.com',
+            password='testpass1234'
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_retrieve_user_profile_success(self):
+        """Test retrieve user."""
+        res = self.client.get(PROFILE_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data, {'email': self.user.email})
+
+    def test_user_profile_post_not_allowed(self):
+        """Test post on user profile not allowed."""
+        res = self.client.post(PROFILE_URL, {})
+
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_update_user_profile(self):
+        """Test update user profile."""
+        payload = {
+            'first_name': 'Test 1',
+            'last_name': 'Lastname',
+            'password': 'updatedpassword'
+        }
+
+        res = self.client.patch(PROFILE_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+
+        self.assertEqual(self.user.first_name, payload['first_name'])
+        self.assertEqual(self.user.last_name, payload['last_name'])
+        self.assertTrue(self.user.check_password(payload['password']))
