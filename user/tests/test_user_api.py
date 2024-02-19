@@ -8,10 +8,18 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 
+from user.serializers import AddressSerializer
+from user.models import ShippingAddress
 
 CREATE_USER_URL = reverse('user:register')
 TOKEN_URL = reverse('user:token')
 PROFILE_URL = reverse('user:profile')
+ADDRESS_URL = reverse('user:address-list')
+
+
+def address_detail_url(address_id):
+    """Create and return detail url for address."""
+    return reverse('user:address-detail', args=[address_id])
 
 
 def create_user(**params):
@@ -123,6 +131,24 @@ class PublicApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_retrieve_address_user_unauthorized(self):
+        """Test retrieve address of user for unauthorized user."""
+        res = self.client.get(ADDRESS_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_unauthenticated_user_access(self):
+        payload = {
+            'street': '3000 swallow hill rd',
+            'building': '112',
+            'city': 'pittsburgh',
+            'state': 'PA',
+            'zipcode': 15220
+        }
+        response = self.client.post(ADDRESS_URL, payload)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
 
 class PrivateAPITests(TestCase):
     """Test for private api."""
@@ -146,7 +172,7 @@ class PrivateAPITests(TestCase):
             'email': self.user.email,
             'first_name': self.user.first_name,
             'last_name': self.user.last_name
-            })
+        })
 
     def test_user_profile_post_not_allowed(self):
         """Test post on user profile not allowed."""
@@ -162,14 +188,106 @@ class PrivateAPITests(TestCase):
             'password': 'updatedpassword'
         }
 
-        # payload = {
-        #     'password': 'updatedpassword'
-        # }
         res = self.client.patch(PROFILE_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
 
-        # self.assertEqual(self.user.first_name, payload['first_name'])
-        # self.assertEqual(self.user.last_name, payload['last_name'])
         self.assertTrue(self.user.check_password(payload['password']))
+        
+    def test_retrieve_users_address_list(self):
+        """Test list the users address"""
+        ShippingAddress.objects.create(
+            street='3000 swallow hill rd',
+            building='112',
+            city='pittsburgh',
+            state='PA',
+            zipcode=15220,
+            customer=self.user
+        )
+        
+        other_user = create_user(
+            email='otheruser@example.com',
+            password='otherpass1234'
+        )
+        ShippingAddress.objects.create(
+            street='3000 swallow hill rd',
+            building='112',
+            city='pittsburgh',
+            state='PA',
+            zipcode=15220,
+            customer=other_user
+        )
+        
+        res = self.client.get(ADDRESS_URL)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            ShippingAddress.objects.filter(customer=self.user.id).count(), 1)
+
+    def test_create_shipping_address(self):
+        """Test create shipping address of user."""
+        payload = {
+            'street': '3000 swallow hill rd',
+            'building': '112',
+            'city': 'pittsburgh',
+            'state': 'PA',
+            'zipcode': 15220,
+            'customer': self.user.id
+        }
+
+        res = self.client.post(ADDRESS_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(ShippingAddress.objects.filter(
+            customer=self.user).count(), 1)
+
+        serializer = AddressSerializer(data=payload)
+        if serializer.is_valid():
+            self.assertEqual(res.data, serializer.data)
+
+    def test_create_address_invalid_data(self):
+        invalid_data = {'user': self.user.id, 'city': 'Test City'}
+
+        response = self.client.post(ADDRESS_URL, invalid_data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            ShippingAddress.objects.filter(customer=self.user).count(), 0)
+
+    def test_patch_user_address(self):
+        """Test update users address."""
+        s_address = ShippingAddress.objects.create(
+            street='Green tree rd',
+            building=919,
+            city='New jersey city',
+            state='NJ',
+            zipcode=12134,
+            customer=self.user
+        )
+        
+        payload = {
+            'street': 'hope hollow',
+            'building': 1010,
+        }
+        url = address_detail_url(s_address.id)
+        res = self.client.patch(url, payload)
+        
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['street'], payload['street'])
+        
+    def test_delete_user_address(self):
+        """Test delete users address."""
+        s_address = ShippingAddress.objects.create(
+            street='Green tree rd',
+            building=919,
+            city='New jersey city',
+            state='NJ',
+            zipcode=12134,
+            customer=self.user
+        )
+        url = address_detail_url(s_address.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        
+        
