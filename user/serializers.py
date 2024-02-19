@@ -5,6 +5,7 @@ from django.contrib.auth import (
     authenticate
 )
 from django.utils.translation import gettext as _
+from user.models import ShippingAddress
 
 from rest_framework import serializers
 
@@ -57,3 +58,22 @@ class AuthTokenSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    """Serializer for Shipping Address of customer."""
+    zipcode = serializers.IntegerField()
+    customer = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all())
+    
+    class Meta:
+        model = ShippingAddress
+        fields = ['street', 'building', 'city',
+                  'state', 'zipcode', 'customer']
+        
+    def validate_zipcode(self, code):
+        """Validate zipcode."""
+        if code > 0 and len(str(abs(code))) == 5:
+            return code
+        else:
+            raise serializers.ValidationError("Invalid zipcode.Enter an valid zipcode")  
+        
