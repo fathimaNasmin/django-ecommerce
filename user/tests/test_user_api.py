@@ -1,5 +1,6 @@
 """Tests for user api endpoint."""
 
+from decimal import Decimal
 from django.test import TestCase
 from django.urls import reverse
 
@@ -9,12 +10,17 @@ from rest_framework.test import APIClient
 from rest_framework import status
 
 from user.serializers import AddressSerializer
-from user.models import ShippingAddress
+from user.models import ShippingAddress, CartItem
+
+from store.models import Product
+
+from store.tests import test_store_api
 
 CREATE_USER_URL = reverse('user:register')
 TOKEN_URL = reverse('user:token')
 PROFILE_URL = reverse('user:profile')
 ADDRESS_URL = reverse('user:address-list')
+CART_URL = reverse('user:cart')
 
 
 def address_detail_url(address_id):
@@ -22,9 +28,30 @@ def address_detail_url(address_id):
     return reverse('user:address-detail', args=[address_id])
 
 
+def cart_detail_url(item_id):
+    """Create and return cart detail url."""
+    return reverse('user:cart-detail', args=[item_id])
+
+
 def create_user(**params):
     """Create and returns new user."""
     return get_user_model().objects.create_user(**params)
+
+
+# Helper function for creating new product instance.
+def create_product(name='sample product',
+                   price='20.99',
+                   description='sample product description'):
+    """Create and returns product."""
+    category = test_store_api.create_category()
+    sub_category = test_store_api.create_sub_category(category=category)
+
+    return Product.objects.create(
+        name=name,
+        price=Decimal(price),
+        description=description,
+        sub_category=sub_category
+    )
 
 
 class PublicApiTests(TestCase):
@@ -148,6 +175,16 @@ class PublicApiTests(TestCase):
         response = self.client.post(ADDRESS_URL, payload)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+    def test_retrieve_cart_unauthorized_user(self):
+        """Test retrieve cart by unauthorized user."""
+        res = self.client.get(CART_URL)
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+    def test_post_cart_unauthorized_user(self):
+        """Test post cart by unauthorized user."""
+        res = self.client.post(CART_URL, {})
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class PrivateAPITests(TestCase):
@@ -289,5 +326,93 @@ class PrivateAPITests(TestCase):
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        
+    def test_retrieve_cart_user(self):
+        """Test retrieve cart of user."""
+        product1 = test_store_api.create_product(name='product1')
+        CartItem.objects.create(
+            user=self.user,
+            product=product1,
+            quantity=2
+        )
+        res = self.client.get(CART_URL)
+        
+        cart_item = CartItem.objects.filter(user=self.user)
+        
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(cart_item.count(), 1)
+        
+    def test_post_item_cart_user(self):
+        """Test creating new item to the cart of the user."""
+        product1 = test_store_api.create_product(name='product1')
+        product2 = test_store_api.create_product(name='product2')
+
+        CartItem.objects.create(
+            user=self.user,
+            product=product1,
+            quantity=2
+        )
+        
+        payload = {
+            'user': self.user,
+            'product': product2,
+            'quantity': 1
+        }
+        
+        res = self.client.post(CART_URL, payload)
+        
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        
+        cart_items = CartItem.objects.filter(user=self.user)
+        for items in cart_items:
+            self.assertEqual(items.product, res.data['product'])
+            self.assertEqual(items.quantity, res.data['quantity'])
+            
+    def test_patch_cart_item(self):
+        """Test updating the cart item."""
+        product1 = test_store_api.create_product(name='product1')
+        item1 = CartItem.objects.create(
+            user=self.user,
+            product=product1,
+            quantity=2
+        )
+        
+        payload = {
+            'user': self.user,
+            'product': product1,
+            'quantity': 1
+        }
+        url = cart_detail_url(item1.id)
+        res = self.client.patch(url, payload)
+        
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            CartItem.objects.filter(user=self.user)[0].quantity, 1
+        )
+
+    def test_delete_item_from_user_cart(self):
+        """Test delete item from thr users cart."""
+        product1 = test_store_api.create_product(name='product1')
+        product2 = test_store_api.create_product(name='product2')
+        item1 = CartItem.objects.create(
+            user=self.user,
+            product=product1,
+            quantity=2
+        )
+        item2 = CartItem.objects.create(
+            user=self.user,
+            product=product2,
+            quantity=5
+        )
+        url = cart_detail_url(item1.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        no_item_exists = CartItem.objects.filter(user=self.user, product=product1).exists()
+        self.assertFalse(no_item_exists)
+        item_exists = CartItem.objects.filter(
+            user=self.user, product=product2).exists()
+        self.assertTrue(item_exists)
+
         
         
