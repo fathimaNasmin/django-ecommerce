@@ -1,6 +1,7 @@
 """Tests for store api end points."""
 
 import tempfile
+import random
 from decimal import Decimal
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -72,11 +73,13 @@ def create_test_image():
 
 def create_category(name='category1'):
     """A function to create a category."""
+    name = name + str(random.randint(1, 100))
     return Category.objects.create(name=name)
 
 
 def create_sub_category(category, name='subcategory1'):
     """Method function to create subcategory."""
+    name = name + str(random.randint(1, 100))
     return SubCategory.objects.create(
         name=name,
         category=category

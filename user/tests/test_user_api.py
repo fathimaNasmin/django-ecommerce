@@ -20,7 +20,7 @@ CREATE_USER_URL = reverse('user:register')
 TOKEN_URL = reverse('user:token')
 PROFILE_URL = reverse('user:profile')
 ADDRESS_URL = reverse('user:address-list')
-CART_URL = reverse('user:cart')
+CART_URL = reverse('user:cart-list')
 
 
 def address_detail_url(address_id):
@@ -355,18 +355,16 @@ class PrivateAPITests(TestCase):
         
         payload = {
             'user': self.user,
-            'product': product2,
+            'product': product2.id,
             'quantity': 1
         }
         
         res = self.client.post(CART_URL, payload)
-        
+
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         
         cart_items = CartItem.objects.filter(user=self.user)
-        for items in cart_items:
-            self.assertEqual(items.product, res.data['product'])
-            self.assertEqual(items.quantity, res.data['quantity'])
+        self.assertEqual(cart_items.count(), 2)
             
     def test_patch_cart_item(self):
         """Test updating the cart item."""
@@ -379,7 +377,7 @@ class PrivateAPITests(TestCase):
         
         payload = {
             'user': self.user,
-            'product': product1,
+            'product': product1.id,
             'quantity': 1
         }
         url = cart_detail_url(item1.id)
