@@ -5,8 +5,9 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.settings import api_settings
 
 from user.serializers import (UserSerializer, AuthTokenSerializer,
-                              AddressSerializer)
-from user.models import ShippingAddress
+                              AddressSerializer,
+                              CartSerializer)
+from user.models import ShippingAddress, CartItem
 
 
 class CreateUserView(generics.CreateAPIView):
@@ -31,23 +32,6 @@ class ManageUserProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
-# class UserAddressView(mixins.CreateModelMixin,
-#                       generics.GenericAPIView):
-#     """Viewsets for user shipping address."""
-#     serializer_class = AddressSerializer
-#     queryset = ShippingAddress.objects.all()
-#     authentication_classes = [authentication.TokenAuthentication]
-#     permission_classes = [permissions.IsAuthenticated]
-    
-#     def post(self, request, *args, **kwargs):
-#         return self.create(request, *args, **kwargs)
-
-#     def get_queryset(self):
-#         return self.queryset.filter(customer=self.request.user)
-    
-#     def perform_create(self, serializer):
-#         serializer.save(customer=self.request.user)
-
 class UserAddressView(viewsets.ModelViewSet):
     """Viewsets for user shipping address."""
     serializer_class = AddressSerializer
@@ -60,3 +44,17 @@ class UserAddressView(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(customer=self.request.user)
+     
+        
+class CartItemUserView(viewsets.ModelViewSet):
+    """Viewsets for the cart items of a user."""
+    serializer_class = CartSerializer
+    queryset = CartItem.objects.all()
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
