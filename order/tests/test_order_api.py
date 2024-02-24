@@ -66,6 +66,4 @@ class PrivateAPITests(TestCase):
         payment_id = res.data['payment_id']
         
         res = self.client.post(PAYMENT_RETURN_VIEW, {'payment_id': payment_id})
-        
-        print(res.content)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
