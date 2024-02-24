@@ -88,3 +88,7 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"CartItem of {self.user.name}"    
+
+    def total_cart_amount(self):
+        """Returns the total amount of the cartitems """
+        return self.quantity * self.product.price
