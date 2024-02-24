@@ -62,13 +62,11 @@ class PaymentReturnView(views.APIView):
     def post(self, request, *args, **kwargs):
         # payment_id = request.query_params.get('payment_id', None)
         payment_id = request.data.get('payment_id', None)
-
-        print("payment_id from view: ", payment_id)
+        
         try:
             # Verify payment in paypal
             payment_status = payment_utils.verify_paypal_payment(payment_id)
 
-            print("payment_status: ", payment_status)
             if payment_status:
                 # Add to payment
                 payment_instance = Payment.objects.filter(
