@@ -25,13 +25,22 @@ def validate_amount(value):
         raise ValidationError('Amount should be greater than 0.')
 
 
+class Payment(models.Model):
+    """Store transaction id for success payments."""
+    transaction_id = models.CharField(max_length=255)
+    customer = models.ForeignKey(User, on_delete=models.CASCADE)
+    order_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = models.CharField(max_length=50)
+    is_successful = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+
 class Order(models.Model):
     """Stores orders of the customer."""
-    order_id = models.CharField(
-                            max_length=50,
-                            primary_key=True, 
-                            unique=True, 
-                            editable=False)
+    order_id = models.UUIDField(
+        primary_key=True, 
+        default=uuid.uuid4, 
+        editable=False)
     customer = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2,
                                  validators=[validate_amount])
@@ -42,16 +51,7 @@ class Order(models.Model):
         ordering = ['-order_date']
     
     def __str__(self):
-        return f"{self.order_id} - {self.customer.full_name}"
-    
-    def save(self, *args, **kwargs):
-        """Override save mathod for generating order_id."""
-        if not self.order_id:
-            timestamp_str = timezone.now().strftime('%Y%m%d%H%M%S')
-            random_str = str(uuid.uuid4().hex)[:8]
-            self.order_id = f"{timestamp_str}-{random_str}"
-            
-        super().save(*args, **kwargs)    
+        return f"{self.order_id} - {self.customer.full_name}"   
             
     
 class OrderDetail(models.Model):
