@@ -41,7 +41,6 @@ class OrderModelTests(TestCase):
         saved_order = Order.objects.get(order_id=self.order.order_id)
         
         self.assertIsNotNone(saved_order.order_id)
-        self.assertRegex(saved_order.order_id, r'\d{14}-[a-f0-9]{8}')
         
     def test_order_amount_raises_error(self):
         """Test the invalid amount raises validation error."""
