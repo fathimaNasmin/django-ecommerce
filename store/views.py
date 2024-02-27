@@ -20,6 +20,7 @@ from rest_framework.mixins import (ListModelMixin,
 from django.db.models import Prefetch
 
 from store.permissions import AdminOnlyPermission
+from store.pagination import CustomPagination
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -27,6 +28,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [AdminOnlyPermission]
+    pagination_class = CustomPagination
 
     def create(self, request, *args, **kwargs):
         # You can access request.data directly in the serializer
@@ -50,6 +52,7 @@ class SubCategoryViewSet(viewsets.ModelViewSet):
     queryset = SubCategory.objects.all()
     serializer_class = SubCategorySerializer
     permission_classes = [AdminOnlyPermission]
+    pagination_class = CustomPagination
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -57,6 +60,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [AdminOnlyPermission]
+    pagination_class = CustomPagination
 
     def get_serializer_class(self):
         """Return the serializer class for the request."""

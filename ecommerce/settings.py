@@ -118,3 +118,9 @@ PAYPAL_ID = os.getenv('PAYPAL_ID')
 
 PAYPAL_SECRET = os.getenv('PAYPAL_SECRET')
 PAYPAL_BASE_URL = 'https://api.sandbox.paypal.com'
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 
+        'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 2,
+}
