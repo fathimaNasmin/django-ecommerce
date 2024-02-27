@@ -116,7 +116,7 @@ class OrderView(mixins.ListModelMixin,
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'order_id'
-    pagination_class = [CustomPagination]
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         return self.queryset.filter(customer=self.request.user)

@@ -10,6 +10,7 @@ from django.contrib.auth import get_user_model
 
 PAYMENT_URL = reverse('order:payment')
 PAYMENT_RETURN_VIEW = reverse('order:payment-return')
+ORDER_URL = reverse('order:orders')
 
 
 class PublicAPITests(TestCase):
@@ -61,18 +62,18 @@ class PrivateAPITests(TestCase):
             'total_amount': 12.99
         }
         res = self.client.post(PAYMENT_URL, payload)
-        
+
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         response_data = json.loads(res.content.decode('utf-8'))
         self.assertIn('payment_id', response_data)
         self.assertIn('approval url', response_data)
-        
+
     def test_retrieve_payment_url_error(self):
         """Test retrieve the payment url raises error."""
         res = self.client.get(PAYMENT_URL)
-        
+
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        
+
     def test_retrieve_payment_return_url_error(self):
         """Test retrieve the payment url raises error."""
         res = self.client.get(PAYMENT_RETURN_VIEW)
@@ -111,3 +112,13 @@ class PrivateAPITests(TestCase):
 
         res = self.client.post(PAYMENT_RETURN_VIEW, {'payment_id': payment_id})
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+    def test_retrieve_customer_orders(self):
+        """Test the retrieval of customer order."""
+        res = self.client.get(ORDER_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('count', res.data)
+        self.assertIn('next', res.data)
+        self.assertIn('previous', res.data)
+        self.assertIn('results', res.data)
