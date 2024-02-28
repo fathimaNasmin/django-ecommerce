@@ -273,21 +273,31 @@ class PublicFilterAPI(TestCase):
             description='A paulo coelho book',
             sub_category=self.fiction
         )
-        thinking_slow_fast = Product.objects.create(
+        self.thinking_slow_fast = Product.objects.create(
             name='Thinking, slow and fast',
             price=Decimal('15.99'),
             description='Unknown author',
             sub_category=self.non_fiction
         )
         
-    def test_filter_product_by_category(self):
-        """Test filtering the product by category."""
+    def test_filter_product_by_name(self):
+        """Test filtering the product by name."""
+
+        query_params = {'name': self.thinking_slow_fast.name}
+        res = self.client.get(PRODUCT_URL, query_params)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['count'], 1)
+        
+    def test_filter_product_by_sub_category(self):
+        """Test filtering the product by sub_category."""
         
         query_params = {'sub_category': self.fiction.id}
         res = self.client.get(PRODUCT_URL, query_params)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data['count'], 1)
+        
 
 class AdminAPITests(TestCase):
     """Test Admin api end points."""
