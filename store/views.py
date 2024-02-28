@@ -16,6 +16,8 @@ from rest_framework.mixins import (ListModelMixin,
                                    UpdateModelMixin,
                                    DestroyModelMixin)
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 
 from django.db.models import Prefetch
 
@@ -61,6 +63,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [AdminOnlyPermission]
     pagination_class = CustomPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['sub_category', 'name']
 
     def get_serializer_class(self):
         """Return the serializer class for the request."""
