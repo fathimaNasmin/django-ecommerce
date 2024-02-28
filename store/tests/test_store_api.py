@@ -179,7 +179,7 @@ class PublicAPITests(TestCase):
         serializer = SubCategorySerializer(subcategories, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        
+
         response_data = json.loads(res.content)
         response_data = response_data['results']
         self.assertEqual(response_data, serializer.data)
@@ -235,7 +235,7 @@ class PublicAPITests(TestCase):
                                format='multipart')
 
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
-        
+
     def test_pagination_in_product_view(self):
         """Test the pagination for product view."""
         # create 10 products
@@ -258,9 +258,36 @@ class PublicAPITests(TestCase):
         if res.data['next']:
             response_next = self.client.get(res.data['next'])
             self.assertEqual(response_next.status_code, status.HTTP_200_OK)
-            
-    
 
+class PublicFilterAPI(TestCase):
+    """Test filtering feature."""
+    def setUp(self):
+        self.books = Category.objects.create(name='books')
+        self.fiction = SubCategory.objects.create(name='Fiction', 
+                                                  category=self.books)
+        self.non_fiction = SubCategory.objects.create(name='Non-Fiction', 
+                                                      category=self.books)
+        winner_stand_alone = Product.objects.create(
+            name='The winner stand alone',
+            price=Decimal('10.99'),
+            description='A paulo coelho book',
+            sub_category=self.fiction
+        )
+        thinking_slow_fast = Product.objects.create(
+            name='Thinking, slow and fast',
+            price=Decimal('15.99'),
+            description='Unknown author',
+            sub_category=self.non_fiction
+        )
+        
+    def test_filter_product_by_category(self):
+        """Test filtering the product by category."""
+        
+        query_params = {'sub_category': self.fiction.id}
+        res = self.client.get(PRODUCT_URL, query_params)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['count'], 1)
 
 class AdminAPITests(TestCase):
     """Test Admin api end points."""
@@ -740,5 +767,3 @@ class ProductImageTests(TestCase):
         res = self.client.post(url, payload, format='multipart')
 
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
-
-    
