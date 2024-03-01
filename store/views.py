@@ -63,9 +63,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [AdminOnlyPermission]
     pagination_class = CustomPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [DjangoFilterBackend,
+                       filters.SearchFilter, 
+                       filters.OrderingFilter]
     filterset_fields = ['sub_category', 'name']
     search_fields = ['name']
+    ordering_fields = ['price', 'created_at']
 
     def get_serializer_class(self):
         """Return the serializer class for the request."""
