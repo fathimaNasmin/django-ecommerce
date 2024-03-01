@@ -96,7 +96,8 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'price', 'image', 'description',
                   'product_inventory',
                   'discount',
-                  'sub_category']
+                  'sub_category',
+                  'created_at']
         read_only_fields = ['id']
 
     def _get_or_create_inventory(self, inventory, product):

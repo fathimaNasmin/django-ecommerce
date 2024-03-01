@@ -73,7 +73,7 @@ class Product(models.Model):
                               validators=[
                                   validators.validate_image_file_extension
                               ])
-    created_at = models.DateField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     sub_category = models.ForeignKey(SubCategory, on_delete=models.CASCADE)
 
     def save(self, *args, **kwargs):
