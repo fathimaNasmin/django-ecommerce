@@ -34,17 +34,5 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = ['order_id', 'amount',
                   'order_date', 'transaction_id', 'items']
 
-    # def create(self, validated_data):
-    #     order_items = validated_data.pop('items', [])
-    #     order = Order.objects.create(**validated_data)
-        
-    #     for items in order_items:
-    #         OrderDetail.objects.create(order=order,
-    #                                    **items)
-            
-    #     # empty the cart of the user when the order is created.
-    #     customer = validated_data['customer'] #add context={"user_id": self.request.user.id} in views when serializing
-    #     try:
-    #         cart_items = CartItem.objects.get(user=customer)
-    #         cart_items.delete()
+    
         

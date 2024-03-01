@@ -35,7 +35,7 @@ class ManageUserProfileView(generics.RetrieveUpdateAPIView):
 class UserAddressView(viewsets.ModelViewSet):
     """Viewsets for user shipping address."""
     serializer_class = AddressSerializer
-    queryset = ShippingAddress.objects.all()
+    queryset = ShippingAddress.objects.all().order_by('state')
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
@@ -49,7 +49,7 @@ class UserAddressView(viewsets.ModelViewSet):
 class CartItemUserView(viewsets.ModelViewSet):
     """Viewsets for the cart items of a user."""
     serializer_class = CartSerializer
-    queryset = CartItem.objects.all()
+    queryset = CartItem.objects.all().order_by('id')
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     
