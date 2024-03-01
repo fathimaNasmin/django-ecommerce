@@ -259,15 +259,17 @@ class PublicAPITests(TestCase):
             response_next = self.client.get(res.data['next'])
             self.assertEqual(response_next.status_code, status.HTTP_200_OK)
 
+
 class PublicFilterAPI(TestCase):
     """Test filtering feature."""
+
     def setUp(self):
         self.books = Category.objects.create(name='books')
-        self.fiction = SubCategory.objects.create(name='Fiction', 
+        self.fiction = SubCategory.objects.create(name='Fiction',
                                                   category=self.books)
-        self.non_fiction = SubCategory.objects.create(name='Non-Fiction', 
+        self.non_fiction = SubCategory.objects.create(name='Non-Fiction',
                                                       category=self.books)
-        winner_stand_alone = Product.objects.create(
+        self.winner_stand_alone = Product.objects.create(
             name='The winner stand alone',
             price=Decimal('10.99'),
             description='A paulo coelho book',
@@ -279,7 +281,7 @@ class PublicFilterAPI(TestCase):
             description='Unknown author',
             sub_category=self.non_fiction
         )
-        
+
     def test_filter_product_by_name(self):
         """Test filtering the product by name."""
 
@@ -288,16 +290,33 @@ class PublicFilterAPI(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data['count'], 1)
-        
+
     def test_filter_product_by_sub_category(self):
         """Test filtering the product by sub_category."""
-        
+
         query_params = {'sub_category': self.fiction.id}
         res = self.client.get(PRODUCT_URL, query_params)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data['count'], 1)
-        
+
+    def test_search_filter_by_product(self):
+        """Test search by the product name."""
+        query_params = {'search': 'slow'}
+        res = self.client.get(PRODUCT_URL, query_params)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        response_data = json.loads(res.content.decode('utf-8'))
+        self.assertIn('slow', response_data['results'][0]['name'])
+
+    def test_search_product_do_not_exists(self):
+        """Test search for the product that do not exists."""
+        query_params = {'search': 'notexists'}
+        res = self.client.get(PRODUCT_URL, query_params)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        response_data = json.loads(res.content.decode('utf-8'))
+        self.assertNotIn('notexists', response_data['results'])
+        self.assertEqual(response_data['count'], 0)
+
 
 class AdminAPITests(TestCase):
     """Test Admin api end points."""
