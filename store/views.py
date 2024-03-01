@@ -6,7 +6,7 @@ from store.serializers import (CategorySerializer,
                                ProductSerializer,
                                ProductImageSerializer)
 
-from rest_framework import permissions, viewsets, status
+from rest_framework import permissions, viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -63,8 +63,9 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [AdminOnlyPermission]
     pagination_class = CustomPagination
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['sub_category', 'name']
+    search_fields = ['name']
 
     def get_serializer_class(self):
         """Return the serializer class for the request."""
