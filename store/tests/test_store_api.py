@@ -316,6 +316,46 @@ class PublicFilterAPI(TestCase):
         response_data = json.loads(res.content.decode('utf-8'))
         self.assertNotIn('notexists', response_data['results'])
         self.assertEqual(response_data['count'], 0)
+        
+    def test_ordering_product_by_low_to_high_price(self):
+        """Test ordering the product by low to high by price."""
+        query_params = {'ordering': 'price'}
+        res = self.client.get(PRODUCT_URL, query_params)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        response_data = json.loads(res.content.decode('utf-8'))
+        response_order = [item['price'] for item in response_data['results']] # [10.99, 15.99]
+        self.assertEqual(response_order, sorted(response_order))
+        
+    def test_ordering_product_by_high_to_low(self):
+        """Test ordering the product by high to low."""
+        query_params = {'ordering': '-price'}
+        res = self.client.get(PRODUCT_URL, query_params)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        response_data = json.loads(res.content.decode('utf-8'))
+        response_order = [item['price'] for item in response_data['results']] # [15.99, 10.99]
+        self.assertEqual(response_order, sorted(response_order, reverse=True))
+        
+    def test_ordering_product_by_latest(self):
+        """Test ordering the product by latest."""
+        query_params = {'ordering': '-created_at'}
+        res = self.client.get(PRODUCT_URL, query_params)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        response_data = json.loads(res.content.decode('utf-8'))
+        response_order = [item['created_at'] 
+                          for item in response_data['results']]
+        self.assertEqual(response_order, sorted(response_order, reverse=True))
+        
+    def test_ordering_product_by_oldest(self):
+        """Test ordering the product by oldest."""
+        query_params = {'ordering': 'created_at'}
+        res = self.client.get(PRODUCT_URL, query_params)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        response_data = json.loads(res.content.decode('utf-8'))
+        response_order = [item['created_at']
+                          for item in response_data['results']]
+        self.assertEqual(response_order, sorted(response_order))
+        
+        
 
 
 class AdminAPITests(TestCase):
