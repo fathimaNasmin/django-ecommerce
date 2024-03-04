@@ -49,7 +49,7 @@ class Order(models.Model):
     
     class Meta:
         ordering = ['-order_date']
-    
+        
     def __str__(self):
         return f"{self.order_id} - {self.customer.full_name}"   
             
@@ -64,6 +64,12 @@ class OrderDetail(models.Model):
     
     def __str__(self):
         return f"{self.order.order_id}"
+    
+    def save(self, *args, **kwargs):
+        self.product.product_inventory.quantity -= self.quantity
+        self.product.product_inventory.save()
+        self.product.save()
+        super().save(*args, **kwargs)
     
     
     
