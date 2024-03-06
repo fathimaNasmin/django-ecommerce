@@ -126,3 +126,16 @@ REST_FRAMEWORK = {
         'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 2,
 }
+
+
+# SMTP Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'BLOG-DJANGO'
+EMAIL_HOST_USER = 'learnpy22@gmail.com'
+EMAIL_HOST_PASSWORD = 'rrsugxzswbfcbesr'
+
+# EMAIL_HOST_USER = os.getenv('EMAIL_ID')
+# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD')
