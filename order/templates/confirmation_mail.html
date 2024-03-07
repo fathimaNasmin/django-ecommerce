@@ -1,0 +1,78 @@
+<!-- Mail template for order confirmation -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        p {
+            color: #333;
+        }
+
+        .order-details {
+            margin-top: 20px;
+        }
+
+        .item {
+            margin-bottom: 10px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Order Confirmation</h1>
+        <p>Dear [Customer Name],</p>
+
+        <p>Your order has been successfully placed. Below are the details of your order:</p>
+
+        <div class="order-details">
+            <div class="item">
+                <strong>Product:</strong> Product Name 1
+            </div>
+            <div class="item">
+                <strong>Quantity:</strong> 2
+            </div>
+            <!-- Add more items as needed -->
+
+            <div class="item">
+                <strong>Total:</strong> $50.00
+            </div>
+        </div>
+
+        <p>Thank you for choosing our services. Your order will be processed shortly.</p>
+
+        <div class="footer">
+            <p>For any inquiries, please contact our customer support at support@example.com.</p>
+            <p>&copy; 2024 Your Company Name. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+
+</html>
