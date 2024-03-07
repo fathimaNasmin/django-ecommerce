@@ -1,5 +1,3 @@
-<!-- Mail template for order confirmation -->
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -33,8 +31,17 @@
             margin-top: 20px;
         }
 
-        .item {
-            margin-bottom: 10px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
         }
 
         .footer {
@@ -48,22 +55,35 @@
 <body>
     <div class="container">
         <h1>Order Confirmation</h1>
-        <p>Dear [Customer Name],</p>
+        <p>Dear {{customer_name}},</p>
 
         <p>Your order has been successfully placed. Below are the details of your order:</p>
 
         <div class="order-details">
-            <div class="item">
-                <strong>Product:</strong> Product Name 1
-            </div>
-            <div class="item">
-                <strong>Quantity:</strong> 2
-            </div>
-            <!-- Add more items as needed -->
-
-            <div class="item">
-                <strong>Total:</strong> $50.00
-            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in all_product %}
+                    <tr>
+                        <td>{{item.product.name}}</td>
+                        <td>{{item.quantity}}</td>
+                        <td>${{item.price}}</td>
+                    </tr>
+                    {% endfor %}
+                    
+                    <!-- Add more rows as needed -->
+                    <tr>
+                        <td colspan="2" style="text-align: right;"><strong>Total Amount:</strong></td>
+                        <td>${{total_amount}}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <p>Thank you for choosing our services. Your order will be processed shortly.</p>
