@@ -51,7 +51,6 @@ def make_paypal_payment(amount):
 
     payment_response = requests.post(payment_url, data=json.dumps(
         payment_payload), headers=payment_headers)
-    # print(payment_response.text)
     
     if payment_response.status_code != 201:
         return False, None, None
@@ -60,7 +59,8 @@ def make_paypal_payment(amount):
     approval_url = next(link['href'] for link in payment_response.json()[
                         'links'] if link['rel'] == 'approval_url')
 
-    return True, payment_id, approval_url
+    payment_status = True
+    return payment_status, payment_id, approval_url
 
 
 def verify_paypal_payment(payment_id):

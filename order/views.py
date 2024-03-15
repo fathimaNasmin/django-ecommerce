@@ -20,6 +20,8 @@ from store.pagination import CustomPagination
 
 from . import payment_utils
 
+from order.tasks import send_order_confirmation_mail
+
 
 class PaymentView(views.APIView):
     """View for payment setup."""
@@ -42,7 +44,7 @@ class PaymentView(views.APIView):
                 'payment_method': 'paypal'
             }
             serializer = PaymentSerializer(data=payment_data)
-            
+
             if serializer.is_valid():
                 serializer.save()
             else:
@@ -64,7 +66,7 @@ class PaymentReturnView(views.APIView):
     def post(self, request, *args, **kwargs):
         # payment_id = request.query_params.get('payment_id', None)
         payment_id = request.data.get('payment_id', None)
-        
+
         try:
             # Verify payment in paypal
             payment_status = payment_utils.verify_paypal_payment(payment_id)
@@ -76,7 +78,7 @@ class PaymentReturnView(views.APIView):
                     transaction_id=str(payment_id)).first()
                 payment_instance.is_successful = True
                 payment_instance.save()
-                
+
                 # create order and order details and update CartItems
                 order_instance = Order.objects.create(
                     customer=request.user,
@@ -87,6 +89,7 @@ class PaymentReturnView(views.APIView):
                 cart_items = CartItem.objects.filter(user=request.user)
 
                 for item in cart_items:
+                    print(item.product, item.quantity)
                     OrderDetail.objects.create(
                         order=order_instance,
                         product=item.product,
@@ -95,8 +98,13 @@ class PaymentReturnView(views.APIView):
                     )
                     item.delete()
 
+                try:
+                    send_order_confirmation_mail.delay(order_instance.order_id)
+                except Exception as e:
+                    return Response({"message":f"error on sending mail- {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 serializer = OrderSerializer(order_instance)
-
+                
                 return Response(serializer.data,
                                 status=status.HTTP_201_CREATED)
             else:
@@ -120,7 +128,7 @@ class OrderView(mixins.ListModelMixin,
 
     def get_queryset(self):
         return self.queryset.filter(customer=self.request.user)
-    
+
     def get(self, request, *args, **kwargs):
         if 'order_id' in kwargs:
             return self.retrieve(request, *args, **kwargs)
