@@ -11,8 +11,9 @@ __pycache__/
 #Ignore media file
 media/
 
+# ignore venv
+venv_ecommerce/
+
 dump.rdb
-
-
 
 

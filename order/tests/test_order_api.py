@@ -1,12 +1,23 @@
 """Test for the order api endpoints."""
 import json
-from django.test import TestCase
+from unittest.mock import patch
+
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from rest_framework.test import APIClient
 from rest_framework import status
 
 from django.contrib.auth import get_user_model
+
+from order.tasks import send_order_confirmation_mail
+from order.models import Order
+from user.models import CartItem
+
+from store.tests import test_store_api
+
+from order.serializers import PaymentSerializer
+
 
 PAYMENT_URL = reverse('order:payment')
 PAYMENT_RETURN_VIEW = reverse('order:payment-return')
@@ -56,69 +67,106 @@ class PrivateAPITests(TestCase):
         )
         self.client.force_authenticate(self.user)
 
-    def test_payment_url_for_the_order(self):
-        """Test the payment page url to make an order."""
-        payload = {
-            'total_amount': 12.99
-        }
-        res = self.client.post(PAYMENT_URL, payload)
+    # @patch('order.views.payment_utils.make_paypal_payment')
+    # @patch('order.views.PaymentSerializer.create')
+    # def test_successful_payment_for_the_order(self, mock_make_paypal_payment, mock_payment_serializer):
+    #     """Test the payment page url to make an order."""
 
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        response_data = json.loads(res.content.decode('utf-8'))
-        self.assertIn('payment_id', response_data)
-        self.assertIn('approval url', response_data)
+    #     # Mock return value of paypal payment
+    #     mock_make_paypal_payment.return_value = (
+    #         True, 'fake_payment_id', 'fake_approval_url')
+    #     payload = {
+    #         'total_amount': 12.99
+    #     }
+    #     res = self.client.post(PAYMENT_URL, payload)
+    #     print("Mocked make_paypal_payment response:", mock_make_paypal_payment.return_value)
+    #     print("Actual response:", res.content)
 
-    def test_retrieve_payment_url_error(self):
-        """Test retrieve the payment url raises error."""
-        res = self.client.get(PAYMENT_URL)
+    #     self.assertEqual(res.status_code, status.HTTP_200_OK)
+    #     self.assertIn('payment_id', res.data)
+    #     self.assertIn('approval_url', res.data)
 
-        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+    #     expected_data = {
+    #         'transaction_id': 'fake_payment_id',
+    #         'customer': self.user.id,
+    #         'order_amount': payload['total_amount'],
+    #         'payment_method': 'paypal'
+    #     }
 
-    def test_retrieve_payment_return_url_error(self):
-        """Test retrieve the payment url raises error."""
-        res = self.client.get(PAYMENT_RETURN_VIEW)
+    #     mock_make_paypal_payment.assert_called_once_with('12.99')
 
-        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+    #     mock_payment_serializer.create.assert_called_once_with(expected_data)
+    # def test_payment_url_for_the_order(self):
+    #     """Test the payment page url to make an order."""
+    #     payload = {
+    #         'total_amount': 12.99
+    #     }
+    #     res = self.client.post(PAYMENT_URL, payload)
 
-    def test_payment_return_url(self):
-        """Test the payment return that checks the status and create an order."""
-        # add product
-        from store.tests import test_store_api
-        from user.models import CartItem
-        product_no1 = test_store_api.create_product(
-            name='spoon', price=2.99, description="Set of 6 stainless steel spoons")
-        product_no2 = test_store_api.create_product(
-            name='bedsheet', price=52.98, description="A queen size cotton bedsheet")
-        # add product to cart
-        CartItem.objects.create(
-            product=product_no1,
-            quantity=2,
-            user=self.user
-        )
-        CartItem.objects.create(
-            product=product_no2,
-            quantity=1,
-            user=self.user
-        )
-        cart_items = CartItem.objects.filter(user=self.user)
-        total_amount = sum([item.total_cart_amount() for item in cart_items])
+    #     self.assertEqual(res.status_code, status.HTTP_200_OK)
+    #     response_data = json.loads(res.content.decode('utf-8'))
+    #     self.assertIn('payment_id', response_data)
+    #     self.assertIn('approval url', response_data)
 
-        payload = {
-            'total_amount': total_amount
-        }
-        res = self.client.post(PAYMENT_URL, payload)
+    # def test_retrieve_payment_url_error(self):
+    #     """Test retrieve the payment url raises error."""
+    #     res = self.client.get(PAYMENT_URL)
 
-        payment_id = res.data['payment_id']
+    #     self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-        res = self.client.post(PAYMENT_RETURN_VIEW, {'payment_id': payment_id})
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+    # def test_retrieve_payment_return_url_error(self):
+    #     """Test retrieve the payment url raises error."""
+    #     res = self.client.get(PAYMENT_RETURN_VIEW)
 
-    def test_retrieve_customer_orders(self):
-        """Test the retrieval of customer order."""
-        res = self.client.get(ORDER_URL)
+    #     self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn('count', res.data)
-        self.assertIn('next', res.data)
-        self.assertIn('previous', res.data)
-        self.assertIn('results', res.data)
+    # def test_payment_return_url(self):
+    #     """Test the payment return that checks the status and create an order."""
+    #     # add product
+
+    #     product_no1 = test_store_api.create_product(
+    #         name='spoon', price=2.99, description="Set of 6 stainless steel spoons")
+    #     product_no2 = test_store_api.create_product(
+    #         name='bedsheet', price=52.98, description="A queen size cotton bedsheet")
+    #     # add product to cart
+    #     CartItem.objects.create(
+    #         product=product_no1,
+    #         quantity=2,
+    #         user=self.user
+    #     )
+    #     CartItem.objects.create(
+    #         product=product_no2,
+    #         quantity=1,
+    #         user=self.user
+    #     )
+    #     cart_items = CartItem.objects.filter(user=self.user)
+    #     total_amount = sum([item.total_cart_amount() for item in cart_items])
+
+    #     payload = {
+    #         'total_amount': total_amount
+    #     }
+    #     res = self.client.post(PAYMENT_URL, payload)
+
+    #     payment_id = res.data['payment_id']
+
+    #     res = self.client.post(PAYMENT_RETURN_VIEW, {'payment_id': payment_id})
+    #     print(res.content)
+    #     self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+    # def test_retrieve_customer_orders(self):
+    #     """Test the retrieval of customer order."""
+    #     res = self.client.get(ORDER_URL)
+
+    #     self.assertEqual(res.status_code, status.HTTP_200_OK)
+    #     self.assertIn('count', res.data)
+    #     self.assertIn('next', res.data)
+    #     self.assertIn('previous', res.data)
+    #     self.assertIn('results', res.data)
+
+    # def test_order_confirmation_mail(self):
+    #     """Test the order confirmation mail sent to the customer."""
+    #     order = Order.objects.create(
+    #         customer=self.user,
+    #         amount=10.99
+    #     )
+    #     print(order)

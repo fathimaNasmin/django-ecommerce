@@ -87,7 +87,7 @@ class CartItem(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"CartItem of {self.user.name}"    
+        return f"CartItem of {self.user.email}"
 
     def total_cart_amount(self):
         """Returns the total amount of the cartitems """

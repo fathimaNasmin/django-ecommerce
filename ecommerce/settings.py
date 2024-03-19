@@ -27,7 +27,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
-    
+    'django_celery_results',
+
     'user',
     'store',
     'order',
@@ -67,10 +68,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'HOST': "127.0.0.1",
-        'NAME': 'ecommerce',
-        'USER': 'postgres',
-        'PASSWORD': 'amy0711',
-        'PORT': 5432
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USERNAME'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'PORT': 5433
     }
 }
 
@@ -122,7 +123,24 @@ PAYPAL_SECRET = os.getenv('PAYPAL_SECRET')
 PAYPAL_BASE_URL = 'https://api.sandbox.paypal.com'
 
 REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 
+    'DEFAULT_PAGINATION_CLASS':
         'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 2,
 }
+
+
+# SMTP Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'BLOG-DJANGO'
+EMAIL_HOST_USER = os.getenv('EMAIL_ID')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD')
+
+# CELERY SETTINGS
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+CELERY_ACCEPT_CONTENT = {'application/json'}
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'django-db'
